@@ -319,7 +319,7 @@ elif [ "$cmd" = "stop" ]; then
   rpStop
 elif [ "$cmd" = "restart" ]; then
   rpStop
-  rpStart $*
+  rpStart background $*
 elif [ "$cmd" = "status" ]; then
   rpStatus
 elif [ "$cmd" = "dump" ]; then
