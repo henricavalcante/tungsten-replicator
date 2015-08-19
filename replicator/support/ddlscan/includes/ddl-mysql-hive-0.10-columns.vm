@@ -1,0 +1,16 @@
+#foreach ( $col in $table.getAllColumns() )
+## Print leading comma if necessary.
+#if ( !$firstcol )
+  #set ( $firstcol = true )
+#else
+,
+#end
+## Print column name. 
+#if ( $reservedWordsHiveQL.contains($col.getName().toUpperCase()) )
+#set ( $colReserved = true )
+  _$col.getName() ##
+#else
+  $col.getName() ##
+#end
+#parse("includes/hive-column-types.vm")##
+#end ## End of column loop. 

@@ -1,0 +1,22 @@
+Scans Oracle for primary keys or, if PK does not exist, suitable unique key and
+generates ALTER TABLE statements to add those primary keys to MySQL.
+
+Optional parameters:
+
+  -opt add drop   - add DROP PRIMARY KEY statements for all the tables.
+
+Optional includes:
+
+  "<schema>.<table>.pk" - included when table doesn't have a primary key
+                    to allow defining primary keys on the slave only.
+                    CAUTION: must be used with severe care and only with
+                    full understanding what problems might arise from
+                    having PK on the slave only.
+                    
+  "<schema>.<table>.ddl" - included after all the original columns. Can
+                    be used to add additional columns, indexes, constraints
+                    and so on, also just comments.
+
+Notes:
+  
+  * Use "-rename" option together with RenameFilter.

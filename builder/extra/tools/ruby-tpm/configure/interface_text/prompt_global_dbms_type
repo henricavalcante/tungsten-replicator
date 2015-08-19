@@ -1,0 +1,5 @@
+Tungsten configuration varies by database.  Choose one of the listed DBMS 
+types.  This will determine the proper configuration procedure to use for 
+replication as well as connectivity.
+
+Valid responses are "mysql" or "postgres".

@@ -1,0 +1,79 @@
+#!/usr/bin/env ruby
+# VMware Continuent Tungsten Replicator
+# Copyright (C) 2015 VMware, Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# Make sure the trep_commit_seqno table exists and has the correct values
+#
+
+require "#{File.dirname(__FILE__)}/../../cluster-home/lib/ruby/tungsten"
+
+class TungstenReplicatorGetPosition
+  include TungstenScript
+  include SingleServiceScript
+  
+  def main
+    if TI.can_sql?(opt(:service))
+      service_schema = TI.setting(TI.setting_key(REPL_SERVICES, @options[:service], "repl_svc_schema"))
+      get_position_from_schema(service_schema)
+    else
+      TU.error("Unable to run #{script_name()} because the #{TI.datasource_type(opt(:service))} datasource for #{opt(:service)} is not supported.")
+    end
+  end
+  
+  def get_position_from_schema(service_schema)
+    sql = "SELECT * FROM #{service_schema}.trep_commit_seqno;"
+    
+    begin
+      position = TI.sql_result(@options[:service], sql)
+    rescue CommandError => ce
+      TU.exception(ce)
+      return false
+    end
+    
+    if position.size() == 0
+      TU.output JSON.pretty_generate({})
+    elsif position.size() == 1
+      TU.output JSON.pretty_generate(position[0])
+    else
+      if opt(:all) == true
+        TU.output JSON.pretty_generate(position)
+      else
+        TU.error("Unable to print position information because there are multiple positions. Add the '--all' option to display all records.")
+      end
+    end
+  end
+
+  def configure
+    super()
+    description("Output the current replication position from the trep_commit_seqno table")
+    
+    add_option(:all, {
+      :on => "--all",
+      :default => false,
+      :help => "Display all position records if multiple exist"
+    })
+  end
+  
+  def validate
+    super()
+  end
+  
+  def script_name
+    "tungsten_get_position"
+  end
+  
+  self.new().run()
+end

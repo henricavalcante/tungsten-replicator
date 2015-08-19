@@ -1,0 +1,6 @@
+# This file should contain the list of tables that should be replicated by Tungsten Replicator, 
+# each table name on a new line. For each table, a list of columns to be captured can be specified.
+# The format of one row is then :
+# tableName<TAB>column1,...,columnN
+# If this file is left empty, all the tables found in the schema will be replicated.
+# If no columns are specified, every columns for the table will be captured.

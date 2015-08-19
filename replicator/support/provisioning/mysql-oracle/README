@@ -1,0 +1,26 @@
+These scripts are an example of the operations needed to start provisioning an Oracle server from a MySQL master.
+The scripts in this directory pertain to the tasks needed on the MySQL side.
+
+Before you run the scripts:
+
+1) install MySQL Sandbox
+   sudo su -
+   yum -y install make perl-ExtUtils-MakeMaker perl-Test-Base.noarch
+   # You must make sure that 'make' and some basic perl modules are are installed
+   cpan 
+   # when asked if you want to do things automatically, say 'yes'
+   cpan> install MySQL::Sandbox
+   cpan> exit
+
+2) Get the binary tarball for the version of MySQL running in the main server
+   wget http://www.percona.com/redir/downloads/Percona-Server-5.5/LATEST/binary/linux/x86_64/Percona-Server-5.5.30-rel30.2-500.Linux.x86_64.tar.gz
+
+3) prepare the sandbox for installation and make sure that the server starts:
+   make_sandbox --export_binaries Percona-Server-5.5.30-rel30.2-500.Linux.x86_64.tar.gz
+
+4) remove the test installation
+   sbtool -o delete -s $HOME/sandboxes/msb_5_5_30
+
+5) Carefully edit the defaults in these scripts, to match your environment.
+
+

@@ -1,0 +1,313 @@
+#!/bin/bash
+# 
+# Script to purge Tungsten history table of old rows.  This should be 
+# installed as a cron job to run at regular intervals, for example once 
+# per hour.  Here is an example of a typical crontab entry. 
+#
+# # Purge history every hour
+# 0 * * * *       /opt/tungsten/purge_history >> /opt/tungsten/purge.log 2>&1 
+#
+# The BINLOG_EXPIRE variable sets the number of days to preserve.  If 
+# this variable is set to 3, log entries older than three days will be 
+# deleted.  
+#
+# If you use the ISOLATE_REPLICATOR option below, you should run purge_history
+# scripts on different hosts at offset intervals to avoid conflicts with 
+# setting policy mode.  For example, host A could run at the top of the hour
+# host B ten minutes after the hour, etc.  
+#
+# IMPORTANT NOTE:  Updates to the tungsten history table must not be 
+# logged.  
+
+##################################################################
+# USER SPECIFIC VARIABLES START
+##################################################################
+#
+# BINLOG_EXPIRE value should match "expire_log_days" variable in mysql;
+# for more info use mysql command
+#   SHOW VARIABLES LIKE 'expire_log_days';
+#
+BINLOG_EXPIRE=0
+
+#
+# Points to location of Tungsten installation. 
+#
+TUNGSTEN_HOME=/opt/tungsten
+
+#
+# Which replicator you want to purge history for. Defaults
+# to the current host.  This works well if this script
+# is run as a chron task on each cluster node
+#
+REPLICATOR_TO_PURGE=`hostname`
+
+#
+# Points at directory where the mysql binary is.
+#
+MYSQL_BIN=/usr/bin
+
+#
+# User and password that has permissions to update the 
+# tables in the tungsten database.
+#
+TUNGSTEN_USER=tungsten
+TUNGSTEN_PWD=secret
+
+#
+# Set this parameter to limit the number of rows that are deleted
+# in a batch.  This script will then ensure that the entire
+# set of 'qualifying' rows by breaking the set up in to 
+# batches of this size.  The primary reason for using a batch
+# size is that, under some conditions, InnoDB resources
+# may be too scarce to satisfy a request for a large number
+# of rows.  The resulting InnoDB error would be:
+#
+# ERROR 1206 (HY000): The total number of locks exceeds the lock table size
+#
+# If you are using a batch size, here, and you still get this error
+# when running the script, reduce the batch size further
+DELETE_BATCH_SIZE=500000
+
+##################################################################
+# USER SPECIFIC VARIABLES END
+##################################################################
+
+# This option should be set to 1 (true) if you are experiencing
+# lock timeout errors from innodb.  This has the effect of
+# doing the following:
+#  	save current policy mode
+#       set the policy mode to MANUAL
+#       set the replicator to OFFLINE
+#       do the delete
+#       set the replicator to ONLINE
+#       restore the previous policy mode
+#
+ISOLATE_REPLICATOR=0
+
+# Handy commands
+CCTRL_CMD="$TUNGSTEN_HOME/tungsten-manager/bin/cctrl -expert "
+MYSQL_CMD="$MYSQL_BIN/mysql -u$TUNGSTEN_USER -p$TUNGSTEN_PWD tungsten --skip-column-names "
+
+# handy label for output
+LABEL="THL PURGE"
+PURGE_LOG="$TUNGSTEN_HOME/tungsten-replicator/log/purge_history.log"
+
+# If true, shows queries executed
+VERBOSE=0
+
+# If true, estimates the number of rows to be purged 
+# This is meant solely for debugging.  If you turn
+# it on, be advised that it may cause a table scan
+# of your history table which, if quite large,
+# could take a long time.
+ESTIMATE=0
+
+
+#
+# Log output to stdout and the specified file
+#
+function log {
+  timestamp=`date`
+  echo "[$timestamp] $*"
+  echo "[$timestamp] $*" >> $PURGE_LOG
+}
+
+#
+# Mark critical parts in script with date/time
+#
+function announce {
+	log "##############################################################"
+	log "$LABEL: $*"
+	log "##############################################################"
+}
+
+#
+# Clean up in case of errors, restoring states
+# where required.
+function clean_up {
+  log "$LABEL: Cleaning up..."
+  if [ $ISOLATE_REPLICATOR -eq 1 ];
+  then
+    if [ -n "$SAVE_POLICY_MODE" ];
+    then
+     log "$LABEL: `set_policy_mode $SAVE_POLICY_MODE`"
+    fi
+    
+    if [ -n "$SAVE_REPLICATOR_STATE" ];
+    then
+      log "$LABEL: `set_replicator_state $REPLICATOR_TO_PURGE $SAVE_REPLICATOR_STATE`"
+    fi
+  fi
+  announce "END OF PURGE"
+  exit $1
+}
+function toUpper() {
+  echo $1 | tr "[:lower:]" "[:upper:]"
+}
+
+function toLower() {
+  echo $1 | tr "[:upper:]" "[:lower:]"
+}
+
+function exit_on_sql_error {
+    echo ""
+    echo "$LABEL: error encountered while executing the query:"
+    echo "$1"
+    echo ""
+    clean_up 1
+}
+
+function exit_on_cctrl_error {
+    echo ""
+    echo "$LABEL: error encountered while executing the cctrl command:"
+    echo "$1"
+    echo ""
+    clean_up 1
+}
+
+#
+# get_policy_mode
+#  returns the current policy manager mode
+#
+function get_policy_mode {
+  policy_manager_mode=`echo ls | $CCTRL_CMD | grep COORDINATOR | awk -F: '{print $2}'`
+  echo "$policy_manager_mode"
+}
+
+#
+# set_policy_mode <mode>
+#
+function set_policy_mode {
+  mode_to_display=`toUpper $1`
+  mode_to_set=`toLower $1`
+
+  current_mode=`get_policy_mode`
+  if [ "$current_mode" == "$mode_to_display" ];
+  then
+    echo "policy manager is already in mode $mode_to_display"
+    return
+  fi
+
+  echo "Setting policy mode to $mode_to_display"
+  policy_manager_mode=\
+   `echo "set policy $mode_to_set" | $CCTRL_CMD | grep "policy mode is now" | awk '{print $5}'` >&/dev/null
+}
+
+#
+# get_replicator_state
+#  returns the replicator's current state 
+#
+function get_replicator_state {
+  replicator_state=`echo ls $1 | $CCTRL_CMD | grep REPLICATOR | awk -F\) '{print $1}' | awk -F= '{print $3}'`
+
+  echo "$replicator_state"
+}
+
+#
+# set_replicator_state <replicator-host> <state>
+#
+function set_replicator_state {
+  state_to_display=`toUpper $2`
+  state_to_set=`toLower $2`
+  current_state=`get_replicator_state $1`
+  if [ "$current_state" == "$state_to_display" ];
+  then
+    echo "Replicator is already in state $state_to_display"
+    return
+  fi
+
+  echo "Setting replicator $1 to $state_to_display"
+  cmd="replicator $1 $state_to_set"
+
+  echo $cmd | $CCTRL_CMD  >& /dev/null
+
+  if [ $? != 0 ];
+  then
+     exit_on_cctrl_error $cmd
+  fi
+}
+
+function execute_query {
+  $MYSQL_CMD --execute="$1"
+  if [ $? != 0 ]; 
+  then
+    exit_on_sql_error "$min_seqno_query"
+  fi
+}
+
+#
+# Trap user interactions etc.
+#
+trap clean_up SIGHUP SIGINT SIGTERM SIGPIPE
+
+#################################################################
+# START OF RUNTIME CODE
+#################################################################
+
+announce "START OF PURGE"
+
+min_seqno_query="use tungsten;
+SELECT min(seqno) from trep_commit_seqno;"
+expire_date_query="SELECT date_sub(now(), interval $BINLOG_EXPIRE day)"
+
+min_seqno=`execute_query "$min_seqno_query"`
+expire_date=`execute_query "$expire_date_query"`
+
+if [ $ISOLATE_REPLICATOR -eq 1 ];
+then
+  SAVE_POLICY_MODE=`get_policy_mode` 
+  SAVE_REPLICATOR_STATE=`get_replicator_state $REPLICATOR_TO_PURGE`
+  log "$LABEL: `set_policy_mode manual`"
+  log "$LABEL: `set_replicator_state $REPLICATOR_TO_PURGE offline`" 
+fi
+
+if [ $ESTIMATE -eq 1 ];
+then
+  purge_estimate_query="use tungsten;
+   select count(*) from history where 
+    timestamp(processed_tstamp) <= timestamp(\"$expire_date\") AND history.seqno < $min_seqno;"
+
+  purge_estimate=`execute_query "$purge_estimate_query"`
+
+  log "$LABEL: Estimate for purge: $purge_estimate rows"
+fi
+
+delete_query="use tungsten;
+SET SESSION SQL_LOG_BIN=0;
+DELETE FROM history 
+  WHERE 
+   timestamp(processed_tstamp) <= timestamp(\"$expire_date\") AND history.seqno < $min_seqno limit $DELETE_BATCH_SIZE;
+SELECT row_count();"
+
+if [ $VERBOSE -eq 1 ];
+then
+  log ""
+  log "Executing the following query:"
+  log "$delete_query"
+  log ""
+else
+  log "$LABEL PARAMETERS: batch size=$DELETE_BATCH_SIZE"
+  log "$LABEL PARAMETERS: expiration date=$expire_date, latest commit seqno=$min_seqno"
+  log "$LABEL: Deleting qualifying rows from the history table..."
+fi
+
+let total_rows_deleted=0
+while true;
+do
+  delete_results=`execute_query "$delete_query"` 
+  let "total_rows_deleted+=$delete_results"
+  
+  if [ $total_rows_deleted -eq 0 ];
+  then
+    log "$LABEL COMPLETED: No rows qualified for the delete."
+    break
+  elif [ $delete_results -eq $DELETE_BATCH_SIZE ];
+  then
+    log "$LABEL PROGRESS: Deleted a batch of $DELETE_BATCH_SIZE rows for a total of $total_rows_deleted rows."
+   else  
+    log "$LABEL SUCCESSFUL: Purged $total_rows_deleted rows from the history table."
+    break
+  fi
+done
+
+clean_up 0

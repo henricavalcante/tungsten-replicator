@@ -1,0 +1,64 @@
+#*
+	VMware Continuent Tungsten Replicator
+	Copyright (C) 2015 VMware, Inc. All rights reserved.
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+
+		http://www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+
+	Initial developer(s): Linas Virbalas
+	Contributor(s):
+
+	Velocity template for Tungsten.
+   
+*##parse("includes/table-counter.vm")
+## Print header or help above the first table.
+#if ( $counter == 1 )
+#if( $help )
+Options:
+  -opt schemaSuffix suffix - suffix to add to schema name (no suffix, if not
+                             specified).
+  -opt tableSuffix suffix  - suffix to add to table names (no suffix, if not
+                             specified).
+  -opt cdcColumnsAtFront b - true for CDC columns at front (default: false).
+
+Resulting tables have CDC columns added.
+
+#parse("includes/ddl-mysql-oracle-help.vm")
+#else
+#parse("includes/ddl-header.vm")
+#end
+#end
+## Stop processing if help requested.
+#if( $help )
+#stop
+#end
+
+#if ( $schemaSuffix )
+$table.setSchema($table.getSchema().concat($schemaSuffix))## 
+#end
+#if( $tableSuffix )
+$table.setTable($table.getName().concat($tableSuffix))##
+#end
+## CDC (logging) columns.
+#set ( $cdcColumns = "  CDC_OP_TYPE VARCHAR(1), /* CDC column */
+  CDC_TIMESTAMP TIMESTAMP, /* CDC column */
+  CDC_SEQUENCE_NUMBER NUMBER PRIMARY KEY /* CDC column */" )
+#if( $cdcColumnsAtFront == "true" )
+#set ( $customColumns = "$cdcColumns,")
+#end
+#parse("includes/ddl-mysql-oracle-table.vm")
+#if( !$cdcColumnsAtFront || $cdcColumnsAtFront != "true" )
+,
+$cdcColumns##
+#end
+
+);

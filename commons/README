@@ -1,0 +1,7 @@
+                               Tungsten Commons
+                                   README
+                                 7 May 2008
+
+This project contains shared libraries used by other Tungsten Stack
+components.  To build and test commons, used the supplied ant targets
+shown by 'ant -p'.

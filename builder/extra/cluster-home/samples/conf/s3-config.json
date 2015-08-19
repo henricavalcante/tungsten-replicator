@@ -1,0 +1,8 @@
+{
+  "awsS3Path" : "s3://your-bucket-for-redshift/redshift-test",
+  "awsAccessKey" : "<access-key-id>",
+  "awsSecretKey" : "<secret-access-key>",
+  "gzipS3Files" : "false",
+  "cleanUpS3Files" : "true",
+  "storeCDCIn" : "${schema}.${table}_cdc"
+}

@@ -1,0 +1,72 @@
+DROP TABLE ${table.getSchema()}.${table.getName()};
+CREATE TABLE ##
+${table.getSchema()}.${table.getName()}##
+#if ( $table.getName().substring(0, 1).matches("[0-9]") ) /* ERROR: table starts with a number, use rename option and a filter */ #end
+#if ( $table.getName().length() > 30 ) /* ERROR: table name exceeds 30 characters, use rename option and a filter */ #end
+#if ( $reservedWordsOracle.contains($table.getName().toUpperCase()) ) /* ERROR: table name is a reserved word, use rename option and a filter */ #end
+
+(
+#if ( $customColumns )
+$customColumns
+#end
+## Columns.
+#foreach ( $col in $table.getAllColumns() )
+#set ( $colTruncated = false )
+#set ( $colReserved = false )
+#if ( $col.getName().length() > 30 )
+#set ( $colTruncated = true )
+  $col.getName().substring(0, 30) ##
+#else
+#if ( $reservedWordsOracle.contains($col.getName().toUpperCase()) )
+#set ( $colReserved = true )
+  $col.getName()_ ##
+#else
+  $col.getName() ##
+#end
+#end
+#if ( $col.getTypeDescription().contains("DATE") || $col.getTypeDescription().contains("TIME") )
+DATE##
+#elseif ( $col.getTypeDescription().startsWith("BIGINT") )
+NUMBER(19, 0)##
+#elseif ( $col.getTypeDescription().startsWith("TINYINT") )
+NUMBER(3, 0)##
+#elseif ( $col.getTypeDescription().startsWith("SMALLINT") )
+NUMBER(5, 0)##
+#elseif ( $col.getTypeDescription().startsWith("MEDIUMINT") )
+NUMBER(7, 0)##
+#elseif ( $col.getTypeDescription().startsWith("INT") )
+NUMBER(10, 0)##
+#elseif ( $col.getTypeDescription().startsWith("DECIMAL(") )## DECIMAL(p,s)
+$col.getTypeDescription().replaceFirst("DECIMAL","NUMBER").replaceFirst(" UNSIGNED","")##
+#elseif ( $col.getTypeDescription().startsWith("VARCHAR") )
+#if ( $col.getLength() <= 4000 )
+#set ( $newLength = $col.getLength() * 2 )
+#if ( $newLength > 4000 ) #set ( $newLength = 4000 ) #end
+VARCHAR2($newLength CHAR) /* $col.getTypeDescription() */##
+#{else}CLOB /* WARN: too long ($col.getLength()) for Oracle VARCHAR2, using CLOB instead */##
+#end
+#elseif ( $col.getTypeDescription().startsWith("CHAR") )
+$col.getTypeDescription()##
+#elseif ( $col.getTypeDescription().contains("TEXT") )## TINYTEXT, TEXT, MEDIUMTEXT, LONGTEXT
+CLOB /* $col.getTypeDescription() */##
+#elseif ( $col.getTypeDescription().contains("BLOB") )## BLOB, MEDIUMBLOB, LONGBLOB
+BLOB##
+#elseif ( $col.getTypeDescription().startsWith("FLOAT") )
+$col.getTypeDescription()##
+#elseif ( $col.getTypeDescription().startsWith("DOUBLE") )
+NUMBER##
+#elseif ( $col.getTypeDescription().startsWith("ENUM") )
+VARCHAR2($enum.largestElementLen($col.getTypeDescription())) /* $col.getTypeDescription() */##
+#elseif ( $col.getTypeDescription().startsWith("SET") )
+VARCHAR2(4000) /* $col.getTypeDescription() */##
+#elseif ( $col.getTypeDescription().equals("BIT(1)") )
+NUMBER(1) /* $col.getTypeDescription() - no constraints for 0 or 1 */##
+#else
+$col.getTypeDescription() /* ERROR: unrecognized (type=$col.getType(), length=$col.getLength()) */#end##
+#if ( $col.isNotNull() ) NOT NULL#end##
+#if( $colTruncated ) /* WARN: truncated column name exceeding 30 characters ($col.getName()) */#end##
+#if( $colReserved ) /* WARN: changed column name because of reserved word ($col.getName()) */#end##
+#if ( $col.getName().substring(0, 1).matches("[0-9]") ) /* ERROR: column starts with a number, use rename option and a filter */#end
+#if( $foreach.hasNext ),
+#end
+#end

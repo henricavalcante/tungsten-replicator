@@ -1,0 +1,47 @@
+                          Table Refresh Example
+
+1 Overview
+
+This script allows you to refresh a table easily to remove differences
+between a master table and the same table on one or more slaves.
+The script selects the data in table into an external file, deletes
+all rows, then reloade it within a single transaction.  To ensure
+serialization, we lock the table using SELECT ... FOR UPDATE.
+
+The reloaded table propagates through replication to all slaves.  Once this
+has occurred master and slaves are completely consistent. 
+
+2 Usage
+
+The script has relatively simple usage.  You can type the script to see 
+options.  
+
+$ ./reload-table.sh 
+Usage: ./reload-table.sh -u user -p password -h host -P port -t tablename
+
+Table names must be fully qualified.  The following example shows
+how to refresh table tpcb.history.  You must run as root or use
+sudo unless your account has permission to delete the external file
+created by MySQL.
+
+$ sudo ./reload-table-b.sh -utungsten -psecret -P12001 -t tpcb.history -hdb1
+
+3 How It Works
+
+The script uses a single transaction with MySQL SELECT INTO OUTFILE and 
+LOAD DATA INFILE.  The commands are approximately as follows for table
+tpcb.history.  
+
+BEGIN;
+SELECT * FROM tpcb.history 
+  INTO OUTFILE '/tmp/tpcb.history.dmp' FOR UPDATE;
+DELETE FROM tpcb.history; 
+LOAD DATA INFILE '/tmp/tpcb.history.dmp' REPLACE
+  INTO TABLE tpcb.history FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n';
+COMMIT;
+
+4 Caveats
+
+This may not work if your table includes integrity constraints
+to/from other tables.  In that case you may need to lock those
+tables as well.

@@ -1,0 +1,5 @@
+Tungsten can automatically make slaves read-only, which means that
+database logins must have SUPER privilege to write to the database
+server.  This should normally be enabled as it prevents accidental
+writes to slaves.  Do not enable it if your applications need to
+write data to slaves.

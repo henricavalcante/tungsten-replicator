@@ -1,0 +1,1 @@
+Force the replicator to read master logs directly from disk.  This option can be slower and will not work unless the replicator is running on the same host as the database server.

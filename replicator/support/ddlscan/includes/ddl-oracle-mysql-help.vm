@@ -1,0 +1,26 @@
+Transforms Oracle table definition (DDL) to MySQL dialect. Reports errors
+(ERROR) and warnings (WARN). Schema and table names are converted to lower
+case.
+
+Optional parameters:
+
+  -opt engine <engine> - override the default MySQL engine type for the tables
+                   generated. WARNING: might cause crash safety and other
+                   serious issues - use only with full understanding of the
+                   risks.
+                    
+Optional includes:
+
+  "<schema>.<table>.pk" - included when table doesn't have a primary key
+                    to allow defining primary keys on the slave only.
+                    CAUTION: must be used with severe care and only with
+                    full understanding what problems might arise from
+                    having PK on the slave only.
+                    
+  "<schema>.<table>.ddl" - included after all the original columns. Can
+                    be used to add additional columns, indexes, constraints
+                    and so on, also just comments.
+
+Notes:
+  
+  * Use "-rename" option together with RenameFilter.

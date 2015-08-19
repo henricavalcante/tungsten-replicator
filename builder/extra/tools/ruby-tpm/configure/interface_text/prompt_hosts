@@ -1,0 +1,1 @@
+Each host defines the parameters for one installation of Tungsten.  This could be for different directories on one host, or across multiple hosts.  The current user must have public-key SSH access to each remote host as the user given in the configuration.  SSH access is needed to test installation prerequisites and to install the runtime files.

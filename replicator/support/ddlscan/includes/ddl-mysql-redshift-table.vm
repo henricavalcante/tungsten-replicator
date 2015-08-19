@@ -1,0 +1,68 @@
+DROP TABLE ${table.getSchema()}.${table.getName()};
+CREATE TABLE ##
+${table.getSchema()}.${table.getName()}##
+#if ( $table.getName().substring(0, 1).matches("[0-9]") ) /* ERROR: table starts with a number, use rename option and a filter */ #end
+
+(
+#if ( $customColumns )
+$customColumns
+#end
+#set ( $firstcol = false )
+#foreach ( $col in $table.getAllColumns() )
+## Print column name. 
+  $col.getName() ##
+### Add datatype specification. 
+#if ( $col.getTypeDescription().contains("DATETIME"))
+DATETIME##
+#elseif ( $col.getTypeDescription().contains("TIMESTAMP") )
+TIMESTAMP##
+#elseif ( $col.getTypeDescription().contains("DATE") )
+DATE##
+#elseif ( $col.getTypeDescription().contains("TIME") )
+VARCHAR(17) /* WARN: no pure TIME type in Redshift */##
+#elseif ( $col.getTypeDescription().startsWith("TINYINT") )
+SMALLINT /* $col.getTypeDescription() */##
+#elseif ( $col.getTypeDescription().startsWith("SMALLINT") )
+SMALLINT##
+#elseif ( $col.getTypeDescription().startsWith("MEDIUMINT") )
+INT /* $col.getTypeDescription() */##
+#elseif ( $col.getTypeDescription().startsWith("INT") )
+INT##
+#elseif ( $col.getTypeDescription().startsWith("BIGINT") )
+BIGINT##
+#elseif ( $col.getTypeDescription().startsWith("DECIMAL(") )
+$col.getTypeDescription()##
+#elseif ( $col.getTypeDescription().startsWith("VARCHAR") )
+#set ( $varCharLen = $col.getLength() * 4 )
+#if ( $varCharLen <= 65000 )
+VARCHAR($varCharLen) /* $col.getTypeDescription() */##
+#{else}VARCHAR(65535) /* WARN: VARCHAR too long ($col.getLength()) for Redshift, which uses bytes not characters */##
+#end
+#elseif ( $col.getTypeDescription().startsWith("CHAR") )
+CHAR($col.getLength())##
+#elseif ( $col.getTypeDescription().startsWith("BINARY") )
+BINARY($col.getLength())##
+#elseif ( $col.getTypeDescription().startsWith("VARBINARY") )
+VARBINARY($col.getLength())##
+#elseif ( $col.getTypeDescription().contains("TEXT") )## TINYTEXT, TEXT, MEDIUMTEXT, LONGTEXT
+VARCHAR(65535) /* WARN: MySQL $col.getTypeDescription() translated to max VARCHAR */##
+#elseif ( $col.getTypeDescription().contains("BLOB") )## TINYBLOB, BLOB, MEDIUMBLOB, LONGBLOB
+VARBINARY(65000) /* WARN: MySQL BLOB translated to max VARBINARY */ ##
+#elseif ( $col.getTypeDescription().startsWith("FLOAT") )
+FLOAT##
+#elseif ( $col.getTypeDescription().startsWith("DOUBLE") )
+DOUBLE PRECISION /* $col.getTypeDescription() */##
+#elseif ( $col.getTypeDescription().startsWith("ENUM") )
+VARCHAR($enum.largestElementLen($col.getTypeDescription())) /* $col.getTypeDescription() */##
+#elseif ( $col.getTypeDescription().startsWith("SET") )
+VARCHAR(65535) /* $col.getTypeDescription() */##
+#elseif ( $col.getTypeDescription().equals("BIT(1)") )
+BOOLEAN /* $col.getTypeDescription() */##
+#elseif ( $col.getTypeDescription().startsWith("BIT") )
+CHAR(64) /* WARN: Converted BIT to CHAR */##
+#else
+$col.getTypeDescription() /* ERROR: unrecognized (type=$col.getType(), length=$col.getLength()) */##
+#end## End of if-then-then...-else.
+#if( $foreach.hasNext ),
+#end
+#end## End of column loop.

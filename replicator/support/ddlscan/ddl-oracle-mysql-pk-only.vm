@@ -1,0 +1,77 @@
+#*
+	VMware Continuent Tungsten Replicator
+	Copyright (C) 2015 VMware, Inc. All rights reserved.
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+
+		http://www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+
+	Initial developer(s): Linas Virbalas
+	Contributor(s):
+ 
+	Velocity template for Tungsten.
+  
+*##parse("includes/table-counter.vm")
+## Print header or help above the first table.
+#if ( $counter == 1 )
+#if( $help )
+#parse("includes/ddl-oracle-mysql-pk-only-help.vm")
+#else
+#parse("includes/ddl-header.vm")
+#end
+#end
+## Stop processing if help requested.
+#if( $help )
+#stop
+#end
+
+#set ( $tryPkInclude = "${table.getSchema()}.${table.getName()}.pk" )
+#set ( $tryInclude = "${table.getSchema()}.${table.getName()}.ddl" )
+## Convert schema and table name to lower case for MySQL. 
+$table.setSchema( $table.getSchema().toLowerCase() )##
+$table.setTable( $table.getName().toLowerCase() )##
+## Drop existing PK if user requests.
+#if ( $add == "drop" )
+ALTER TABLE ${table.getSchema()}.${table.getName()} DROP PRIMARY KEY;
+#end
+## Primary key.
+#if ( $table.getPrimaryKey() )
+ALTER TABLE ${table.getSchema()}.${table.getName()} ADD PRIMARY KEY (##
+#foreach ( $key in $table.getPrimaryKey().getColumns() )
+$key.getName()##
+#if( $foreach.hasNext ), #else)#end
+#end
+;
+#elseif ( $velocity.resourceExists($tryPkInclude) )
+  /* INFO: PK error ignored, because include found */
+  /* BEGIN OF $tryPkInclude */
+#include($tryPkInclude)
+  /* END OF $tryPkInclude */
+#else
+## Is there a unique index suitable for PK?
+#set ( $uIndex = $table.getPKFromUniqueIndex() )
+#if ( $uIndex )
+ALTER TABLE ${table.getSchema()}.${table.getName()} ADD PRIMARY KEY (##
+#foreach ( $uCol in $uIndex.getColumns() )
+$uCol.getName()##
+#if( $foreach.hasNext ), #else)#end
+#end
+; /* WARN: no PK found, using suitable unique index instead: $uIndex.getName() */
+#else
+  /* ERROR: ${table.getSchema()}.${table.getName()} has no PK or suitable unique index! */
+#end
+#end
+#set ( $tryInclude = "${table.getSchema()}.${table.getName()}.ddl" )
+#if ( $velocity.resourceExists($tryInclude) )
+  /* BEGIN OF $tryInclude */
+#include($tryInclude)
+  /* END OF $tryInclude */
+#end

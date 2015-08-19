@@ -1,0 +1,6 @@
+Tungsten can maintain an optional virtual IP address (VIP) that is
+attached to the master data source and moves automatically if the
+master shifts to another host.  If you are building a DR site, you
+must enable a VIP on both sites so that replicators can find the master
+on the primary.  Also, in the case where you will maintain a DR site,
+the VIP should be a different address on each site.

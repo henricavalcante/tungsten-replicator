@@ -1,0 +1,4 @@
+Every Tungsten cluster requires its own name and a list of DBMS
+host names that belong to the cluster.  The host names must resolve
+to the same IP address on each host.  These values must be the same
+across every node in the cluster.

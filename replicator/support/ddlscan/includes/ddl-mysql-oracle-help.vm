@@ -1,0 +1,20 @@
+Transforms MySQL table definition (DDL) to Oracle dialect. Reports errors
+(ERROR) and warnings (WARN).
+                    
+Optional includes:
+
+  "<schema>.<table>.pk" - included when table doesn't have a primary key
+                    to allow defining primary keys on the slave only.
+                    CAUTION: must be used with severe care and only with
+                    full understanding what problems might arise from
+                    having PK on the slave only.
+                    
+  "<schema>.<table>.ddl" - included after all the original columns. Can
+                    be used to add additional columns, indexes, constraints
+                    and so on, also just comments.
+
+Notes:
+  
+  * ENUM -> VARCHAR2(longest ENUM element) - use EnumToStringFilter.
+  * SET -> VARCHAR2(4000) - use SetToStringFilter.
+  * Use "-rename" option together with RenameFilter.

@@ -1,0 +1,15 @@
+Regular
+  Deploy to each host using SSH to copy files and execute the configuration
+  process.
+  
+Sandbox
+  Deploy multiple times to the local system.
+  
+VM
+  Deploy using a virtual machine manager.
+  
+Cloud
+  Deploy using a cloud management platform.
+  
+Validation
+  Do not deploy to any machines but run all validation checks.

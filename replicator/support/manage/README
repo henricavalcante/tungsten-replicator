@@ -1,0 +1,41 @@
+                          Administrative Samples
+
+1 Overview
+
+This directory contains a set of Bash scripts that illustrate basic
+administrative commands for Tungsten Replicator.  These include
+starting a master, starting a slave, and performing simple failover.
+
+The scripts are designed to work with MySQL.  They assume that
+Tungsten Replicator catalogs are stored in database tungsten and
+that there is a sample database named sample. 
+
+2 Getting Started
+
+Before running the scripts you should fill out values for the
+environmental variables defined in script variables.sh.
+
+3 Usage
+
+Here is a brief description of the usage of each script. 
+
+* reset_local.sh -- Stops running replicator locally and clears tungsten and
+  sample databases
+
+* start-master.sh -- Starts the master and waits for it to reach
+  MASTER state.
+
+* start-slave.sh -- Starts the slave replicator. 
+
+* failover.sh -- Promote the slave to be the master.  
+
+* failback.sh -- Promote the master to be master again. 
+
+* slave-backup.sh -- Run a backup.  This requires the Tungsten cctrl command.
+
+The variable.sh script is only used for configuration and is not
+executable.
+
+IMPORTANT NOTE:  The scripts assume you have a single replication
+service running.  If you have more than one service you will need
+to add '-service <svcname>' options to trepctl commands in the scripts.

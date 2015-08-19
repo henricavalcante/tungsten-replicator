@@ -1,0 +1,1 @@
+Additional filters to be used while applying events for this replication service.  These filters are used in the 'q-to-dbms' stage of the direct and slave pipelines.

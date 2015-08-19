@@ -1,0 +1,1 @@
+Heterogenous replication requires ENUM values to be expanded into their text equivalent.  This ensures that inconsistencies between database platforms doesn't break replication.

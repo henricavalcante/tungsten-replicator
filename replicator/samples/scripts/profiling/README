@@ -1,0 +1,58 @@
+                          Replication Profiling Script
+
+1 Overview
+
+This directory contains a script for profiling native MySQL and Tungsten 
+replication performance.  The script measures the rate that the slave applies
+binlog bytes as well as the "catch-up" rate, i.e., the number of seconds that
+the slave gains on the master. 
+
+2 Getting Started
+
+The best way to profile replication is to set up a master with binlogs that 
+is several hours ahead of one or more slaves.  Use file system snapshots or 
+backups so that you can restore this configuration at will.  This makes tests
+repeatable, which is important if you want to test multiple configurations or 
+restart quickly after a test error. 
+
+You should also ensure that the mysql client as well as the Tungsten trepctl 
+utility are in your execution path. 
+
+3. Running a Test
+
+Follow the steps shown below to run a replication performance profiling test. 
+
+1.) Restore master and slave to their start positions. 
+
+2.) Start the profiler script in the background.  For MySQL replication use
+options like the following: 
+
+   ./slave-profiler-t.pl -x mysql -u tungsten -p secret -o mysql-rep.out &
+
+For Tungsten replication use options like the following.  
+
+   ./slave-profiler-t.pl -x tungsten -o tungsten-rep.out &
+
+3.) Start replication using either MySQL or Tungsten.  Wait until the slave 
+catches up to the master. 
+
+4.) Kill the slave-profiler-t.pl process.  
+
+4 Interpreting Results
+
+The slave-profiler-t.pl script samples the slave position at intervals
+and writes a row for each sample to the trace file.  The most useful
+values are the following:
+
+ Seconds_Changed - The change in seconds that the slave is behind the master 
+   over the last sampling interval.  Positive numbers indicate catch-up.  
+   Negative numbers indicate the slave is falling behind. 
+
+ Bytes_Processed - The number of bytes of binlog processed during the last 
+   sampling interval.  The larger this value is the better.  Note that long
+   transactions that take longer than the sampling interval to process may 
+   may cause the value to stick at zero for a few interfaces, then suddenly 
+   jump.  
+
+Performance profiling numbers are best when graphed.  The output
+format is CSV so you can load it into Excel and create graphs.

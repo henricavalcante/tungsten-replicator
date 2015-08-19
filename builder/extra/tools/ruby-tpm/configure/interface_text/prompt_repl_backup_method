@@ -1,0 +1,1 @@
+Tungsten integrates with a variety of backup mechanisms.  We strongly recommend you configure one of these to help with provisioning servers. Please consult the Tungsten Replicator Guide for more information on backup configuration.

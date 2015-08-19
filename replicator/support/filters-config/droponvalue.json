@@ -1,0 +1,21 @@
+[
+    {
+        "schema": "demo",
+        "table": "foo",
+        "column": "serial",
+        "values": [
+            "10001",
+            "10002",
+            "10003"
+        ]
+    },
+    {
+        "schema": "*",
+        "table": "foo",
+        "column": "id",
+        "values": [
+            "10",
+            "11"
+        ]
+    }
+]

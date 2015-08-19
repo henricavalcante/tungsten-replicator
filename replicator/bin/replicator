@@ -1,0 +1,333 @@
+#!/bin/bash
+# VMware Continuent Tungsten Replicator
+# Copyright (C) 2015 VMware, Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+#      
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# REPLICATOR#NIX START SCRIPT
+# 
+# Script usage follows service script conventions: 
+#   replicator { console | start [offline debug] | stop | restart | status | dump}
+#
+# Environmental variables accepted by this script: 
+#   JAVA_HOME            - Java release directory, defaults to java in path
+#   REPLICATOR_DEBUG_PORT- Port for JVM remote debugging
+#   REPLICATOR_DEBUG_OPTS- Other options for debugging
+#   REPLICATOR_GC_POLICY - Replicator GC policy, defaults to concurrent GC
+#   REPLICATOR_HEAP_SIZE - Replicator heap size, defaults to 1024M
+#   REPLICATOR_FILE_ENCODING - Java file encoding (see replicator.env)
+#   REPLICATOR_USER_TIMEZONE - Java timezone (see replicator.env)
+#   JVM_OPTIONS          - Extra Java VM options 
+#   REPLICATOR_RMI_OPTS  - RMI options, defaults to allowing remote access
+#   REPLICATOR_LOG_DIR   - Replicator log directory, defaults to $RPHOME/log
+#   REPLICATOR_PID       - File to contain running PID
+#
+# To configure script behavior, put default values in replicator.env
+# and they will be sourced on startup.  This is better than altering
+# the script directly.
+
+##############################################################################
+# ENVIRONMENT SETUP
+
+##############################################################################
+# Replicator main class.  
+RP_MAIN=com.continuent.tungsten.replicator.management.ReplicationServiceManager
+
+# Find our home. 
+RPBIN=`dirname $0`
+RPHOME=`cd $RPBIN/..; pwd`
+
+# If there's a replicator.env file, source it now. 
+if [ -f $RPHOME/conf/repld.env ]; then
+  . $RPHOME/conf/repld.env
+fi
+
+# Identify the replicator PID file. 
+if [ -z "$REPLICATOR_PID" ]; then 
+  REPLICATOR_PID=$RPHOME/var/replicator.pid
+fi
+
+# Add jars from all directories to class path.
+CLUSTER_HOME=$RPHOME/../cluster-home
+for jar in $RPHOME/lib/*.jar $CLUSTER_HOME/lib/*.jar; do 
+  if [ -z "$CP" ]; then
+    CP=$jar
+  else
+    CP=$CP:$jar
+  fi
+done
+
+# Add configuration directory to class path. 
+CP=$CP:$RPHOME/conf
+# Add cluster-home/lib to class path
+CP=$CP:$CLUSTER_HOME/lib/*
+
+# Find Java.
+if [ -z "$JAVA_HOME" ]; then
+  JAVA=`which java`
+else
+  JAVA=$JAVA_HOME/bin/java
+fi
+if [ ! -x "$JAVA" ]; then
+  echo "Cannot find java command.  Please set the JAVA_HOME environment"
+  echo "variable or add java to the execution path."
+  exit 1
+fi
+
+# Set the GC policy and default heap size. 
+if [ -z "$REPLICATOR_GC_POLICY" ]; then 
+  REPLICATOR_GC_POLICY="-XX:+UseConcMarkSweepGC -XX:+CMSIncrementalMode"
+fi
+if [ -z "$REPLICATOR_HEAP_SIZE" ]; then 
+  REPLICATOR_HEAP_SIZE="-Xmx1024m"
+fi
+JVM_OPTIONS="${JVM_OPTIONS} $REPLICATOR_HEAP_SIZE $REPLICATOR_GC_POLICY"
+
+# Set the timezone if available. 
+if [ ! -z "$REPLICATOR_USER_TIMEZONE" ]; then
+  JVM_OPTIONS="${JVM_OPTIONS} $REPLICATOR_USER_TIMEZONE"
+fi
+
+# Set the platform charset if available.
+if [ ! -z "$REPLICATOR_FILE_ENCODING" ]; then
+  JVM_OPTIONS="${JVM_OPTIONS} $REPLICATOR_FILE_ENCODING"
+fi
+
+# Set log directory. 
+if [ -z "$REPLICATOR_LOG_DIR" ]; then 
+  REPLICATOR_LOG_DIR=$RPHOME/log
+fi
+if [ ! -d "$REPLICATOR_LOG_DIR" ]; then
+  echo "Cannot find replicator log directory: $REPLICATOR_LOG_DIR"
+  exit 1
+fi
+JVM_OPTIONS="${JVM_OPTIONS} -Dreplicator.log.dir=$REPLICATOR_LOG_DIR" 
+
+# Set cluster.home
+JVM_OPTIONS="${JVM_OPTIONS} -Dcluster.home=$CLUSTER_HOME" 
+
+# Set debug port and enable if debug option is enabled.  These are added if
+# replicator is started with debug option. 
+if [ -z "$REPLICATOR_JVMDEBUG_PORT" ]; then
+  REPLICATOR_JVMDEBUG_PORT=54002
+fi
+if [ -z "$REPLICATOR_JVMDEBUG_OPTS" ]; then
+  REPLICATOR_JVMDEBUG_OPTS="-enableassertions -Xdebug -Xnoagent -Djava.compiler=none -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=$REPLICATOR_JVMDEBUG_PORT"
+fi
+
+##############################################################################
+# UTILITY FUNCTIONS
+##############################################################################
+
+# Command to read current PID if any. 
+getPid() {
+  if [ -e "$REPLICATOR_PID" ]; then
+    echo `cat $REPLICATOR_PID`
+  else
+    echo ""
+  fi
+}
+
+# Command to remove PID file. 
+rmPidFile() {
+  if [ -e "$REPLICATOR_PID" ]; then
+    rm $REPLICATOR_PID
+  fi
+}
+
+# Command to kill a process. 
+killPid() {
+  kill $1
+}
+
+# See if the process corresponding to a PID is alive and print status. 
+isPidAlive() {
+  ps -f $1 > /dev/null
+  if [ $? = "0" ]; then
+    echo 'alive'
+  else
+    echo 'dead'
+  fi
+}
+
+##############################################################################
+# OPERATIONS
+##############################################################################
+
+# Start the replicator
+rpStart() {
+  # Parse arguments. 
+  cmd="$1"
+  shift
+  while [[ ${#} -gt 0 ]] 
+  do
+    if [ "$1" = "debug" ]; then
+      JVM_OPTIONS="$REPLICATOR_JVMDEBUG_OPTS $JVM_OPTIONS"
+    elif [ "$1" = "offline" ]; then
+      offline="offline"
+    else
+      echo "Unrecognized option: $1"
+      exit 1
+    fi
+    shift
+  done
+
+  # See if there is already a replicator running.  If there's just a PID
+  # file remove it. 
+  pid=`getPid`
+  if [ "$pid" != "" ]; then
+    if [ `isPidAlive $pid` = "alive" ]; then
+      echo "Replicator is already started"
+      exit 1
+    else
+      rmPidFile
+    fi
+  fi
+  
+  # Ensure we have a directory for the pid file. 
+  pid_dir=`dirname $REPLICATOR_PID`
+  mkdir -p $pid_dir
+  # Start according to whether we are in console or background mode. 
+  if [ "$cmd" = "background" ]; then
+    echo "Starting Tungsten Replicator Service..."
+    # Start the replicator using nohup to protect against SIGHUP on shell exit.
+    nohup $JAVA -cp $CP -Dlog4j.rootAppender=file -Dreplicator.home.dir=$RPHOME -Dreplicator.log.dir=$REPLICATOR_LOG_DIR $JVM_OPTIONS ${RP_MAIN} $offline > $RPHOME/log/replicator-nohup.out 2>&1 &
+    status="$?"
+    pid="$!"
+    if [ $status = "0" ]; then
+      echo $pid > $REPLICATOR_PID
+      echo -n "Waiting for Tungsten Replicator Service."
+      for i in 1 2 3 4 5 6 7 8 9 10; do
+        if [ `isPidAlive $pid` = "alive" ]; then
+          echo
+          echo "running: PID:$pid"
+          return
+        else
+          echo -n "."
+          sleep 1
+        fi
+      done
+    else
+      echo "Replicator failed to start"
+      exit $status
+    fi
+  else 
+    # Start the replicator in foreground.
+    $JAVA -cp $CP -Dlog4j.rootAppender=stdout -Dreplicator.home.dir=$RPHOME -Dreplicator.log.dir=$REPLICATOR_LOG_DIR $JVM_OPTIONS ${RP_MAIN} $offline
+  fi
+}
+
+# Stop the replicator. 
+rpStop() {
+  # See if the replicator is running and if so stop it. 
+  echo "Stopping Tungsten Replicator Service..."
+  pid=`getPid`
+  if [ "$pid" != "" ]; then
+    if [ `isPidAlive $pid` = "alive" ]; then
+      killPid $pid
+      echo "Waiting for Tungsten Replicator Service to exit..."
+      for i in 1 2 3 4 5 6 7 8 9 10; do
+        if [ `isPidAlive $pid` = "alive" ]; then
+          sleep 1
+        else
+          echo "Stopped Tungsten Replicator Service."
+          rmPidFile
+          return
+        fi
+      done
+      echo "Could not stop replicator!"
+      exit 1;
+    else
+      echo "Tungsten Replicator Service was not running."
+      rmPidFile
+    fi
+  else
+    echo "Tungsten Replicator Service is not running."
+  fi
+}
+
+# Check replicator process status. 
+rpStatus() {
+  # See if the replicator is running and if so stop it. 
+  pid=`getPid`
+  if [ "$pid" = "" ]; then
+    echo "Tungsten Replicator Service is not running."
+    exit 1
+  else
+    if [ `isPidAlive $pid` = "alive" ]; then
+      echo "Tungsten Replicator Service is running: PID: $pid, Java:STARTED"
+    else
+      echo "Tungsten Replicator Service is not running."
+      exit 1
+    fi
+  fi
+}
+
+# Dump replicator threads. 
+rpDump() {
+  # See if the replicator is running and if so send kill -QUIT signal.
+  pid=`getPid`
+  if [ "$pid" = "" ]; then
+    echo "Tungsten Replicator Service is not running or in console mode."
+    exit 1
+  else
+    if [ `isPidAlive $pid` = "alive" ]; then
+      kill -QUIT $pid
+    else
+      echo "Tungsten Replicator Service is not running."
+      exit 1
+    fi
+  fi
+}
+
+# Show replicator commands. 
+rpUsage() {
+  echo "Usage: replicator command [ options ]"
+  echo "Commands:"
+  echo "  start   Start in the background as a daemon process"
+  echo "  console Start in the current tty with output to console"
+  echo "  stop    Stop if running as a daemon or in another console"
+  echo "  restart Stop if running and then start"
+  echo "  status  Query the current status"
+  echo "  dump    Request a Java thread dump if running"
+  echo "Options:"
+  echo "  debug   Start with Java debugging on port $REPLICATOR_JVMDEBUG_PORT"
+  echo "  offline Start in offline state"
+}
+
+##############################################################################
+# COMMAND PROCESSING 
+##############################################################################
+
+# Process the command. 
+cmd=$1; shift
+if [ "$cmd" = "start" ]; then
+  rpStart background $*
+elif [ "$cmd" = "console" ]; then
+  rpStart console $*
+elif [ "$cmd" = "stop" ]; then
+  rpStop
+elif [ "$cmd" = "restart" ]; then
+  rpStop
+  rpStart $*
+elif [ "$cmd" = "status" ]; then
+  rpStatus
+elif [ "$cmd" = "dump" ]; then
+  rpDump
+elif [ "$cmd" = "help" ]; then
+  rpUsage
+  exit 0
+else
+  rpUsage
+  exit 1
+fi

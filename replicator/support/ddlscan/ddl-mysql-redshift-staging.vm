@@ -1,0 +1,76 @@
+#*
+	VMware Continuent Tungsten Replicator
+	Copyright (C) 2015 VMware, Inc. All rights reserved.
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+
+		http://www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+
+	Initial developer(s): Linas Virbalas, Robert Hodges
+	Contributor(s):
+
+	Velocity template for Tungsten.
+
+*##parse("includes/table-counter.vm")
+## Print header or help above the first table.
+#if ( $counter == 1 )
+#if( $help )
+Transforms MySQL table definition (DDL) to equivalent Redshift staging
+tables. Reports errors (ERROR) and warnings (WARN). Column mappings
+generally map to those used by Tungsten Replicator.
+
+Options:
+  -opt schemaPrefix prefix   - prefix to add to schema name
+                               (default - no prefix)
+  -opt tablePrefix prefix    - prefix to add to table names
+                               (default: stage_xxx_)
+  -opt renameSchema template - rename schema with a template, examples:
+                               "{schema}_cdc" or "cdc_{schema}"
+  -opt renameTable template  - rename table with a template, examples:
+                               "{table}_cdc" or "cdc_{table}"
+  
+#else
+#parse("includes/ddl-header.vm")
+#end
+#end
+## Stop processing if help requested.
+#if( $help )
+#stop
+#end
+
+## Transform schema and table names.
+#if ( $renameSchema )
+$table.setSchema($renameSchema.replace("{schema}", $table.getSchema()))##
+#elseif ( $schemaPrefix )
+$table.setSchema($schemaPrefix.concat($table.getSchema()))##
+#end
+#if ( $renameTable )
+$table.setTable($renameTable.replace("{table}", $table.getName()))##
+#else
+#if( !$tablePrefix )
+#set ( $tablePrefix = "stage_xxx_" )
+#end
+$table.setTable($tablePrefix.concat($table.getName()))##
+#end
+#if ( $counter == 1 )
+CREATE SCHEMA ${table.getSchema()};
+
+#end
+## Tungsten transaction identification columns.
+#set ( $customColumns = "  tungsten_opcode CHAR(2),
+  tungsten_seqno INT,
+  tungsten_row_id INT,
+  tungsten_commit_timestamp TIMESTAMP," )
+#parse("includes/ddl-mysql-redshift-table.vm") 
+## Primary key of this staging table.
+,
+  PRIMARY KEY (tungsten_opcode, tungsten_seqno, tungsten_row_id)
+);

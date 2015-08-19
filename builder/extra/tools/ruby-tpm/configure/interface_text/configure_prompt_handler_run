@@ -1,0 +1,8 @@
+
+The script will now ask you a series of questions to configure the
+cluster.  Please provide a response for each question.
+
+- To repeat the last prompt, type `prev`.
+- For more information on the current question, type `help`.
+- To use the default value for the current and all remaining questions, type `defaults`.
+- To save your current responses and exit the script, type `save`.

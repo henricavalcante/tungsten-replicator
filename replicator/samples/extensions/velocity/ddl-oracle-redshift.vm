@@ -1,0 +1,43 @@
+#*
+  Tungsten Scale-Out Stack
+  Copyright (C) 2013 Continuent Inc.
+  Contact: tungsten@continuent.org
+ 
+  Initial developer(s): Linas Virbalas, Robert Hodges
+  Contributor(s): MC Brown
+ 
+  Velocity template for Tungsten.
+
+*##parse("includes/table-counter.vm")
+## Print header or help above the first table.
+#if ( $counter == 1 )
+#if( $help )
+Transforms MySQL table definition (DDL) to equivalent Redshift
+base tables. Reports errors (ERROR) and warnings (WARN). Column
+mappings generally map to those used by Tungsten Replicator.
+#else
+#parse("includes/ddl-header.vm")
+
+CREATE SCHEMA ${table.getSchema()};
+#end
+#end
+## Stop processing if help requested.
+#if( $help )
+#stop
+#end
+
+#parse("includes/ddl-oracle-redshift-table.vm") 
+## Primary key.
+#if ( $table.getPrimaryKey() )
+,
+  PRIMARY KEY (##
+#foreach ( $key in $table.getPrimaryKey().getColumns() )
+$key.getName()##
+#if( $foreach.hasNext ), #else)#end
+#end
+#else
+
+  /* ERROR: table must have a primary key! */##
+#end
+
+);

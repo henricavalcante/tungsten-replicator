@@ -1,0 +1,1 @@
+Each host in the cluster must have a unique name that resolves to a routable, non-loopback IP address.

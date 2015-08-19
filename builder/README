@@ -1,0 +1,37 @@
+What's in?
+----------
+This project contains necessary files and scripts to build Tungsten
+Replicator.  As long as you have JKD 1.6 and Ant 1.7 or greater you
+should be able to build.
+
+What to do?
+-----------
+If you need to override any default, don't touch config: use
+config.local instead. You can override values in there, like if you
+need to build without checkout, or don't want to recompile everything.
+Then, run
+
+$ ./build.sh
+
+Note that config.local will override defaults declared in config.  
+
+How does it work?
+-----------------
+The build.sh script will:
+1. Check out code for all Tungsten Replicator projects. 
+2. Build all projects. 
+3. Copy code to the build directory. 
+4. Build the source and binary tar distributions. 
+
+At the end of the build you will find .tar.gz output in the build
+directory.
+
+Working with Eclipse
+--------------------
+We normally use Eclipse for work on Tungsten.  Here's how to set up. 
+1. Run build.sh to get the source code from SVN.  
+2. Create a new eclipse workspace. 
+3. Import this project plus all 
+
+Depending on your Eclipse settings you may have to set the JDK
+version to 1.6.

@@ -1,0 +1,17 @@
+# Configuration file for build.sh script.  You can override values by putting
+# them in config.local. 
+
+# Where built projects will end up. 
+BUILD_DIR=build
+
+# Version name of the release to build
+VERSION_MAJOR=4
+VERSION_MINOR=1
+VERSION_REVISION=0
+VERSION=$VERSION_MAJOR.$VERSION_MINOR.$VERSION_REVISION
+
+# Set to 1 to skip the build.
+SKIP_BUILD=0
+
+# Set to 1 to skip source generation.
+SKIP_SOURCE=1

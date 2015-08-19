@@ -1,0 +1,12 @@
+# VMware software license
+StartFields = "Cpt, ProductID, LicenseVersion, LicenseType, LicenseEdition, Option, Epoch"
+Cpt = "COPYRIGHT (c) VMware, Inc."
+ProductID = "VMware Continuent"
+LicenseVersion = "4.0"
+LicenseType = "Site"
+Epoch = "2015-02-01"
+LicenseEdition = "continuent.standard"
+Option = "7"
+Data = "FileVersion=4.0.0.0;desc=VMware Continuent"
+DataHash = "716aef86-e035a7ae-26e495b1-8a32cc79-acb6d437"
+Hash = "648eef0a-1c7786c2-f8747934-a9a63c11-39d119a0"

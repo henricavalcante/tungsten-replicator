@@ -1,0 +1,115 @@
+#*
+	VMware Continuent Tungsten Replicator
+	Copyright (C) 2015 VMware, Inc. All rights reserved.
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+
+		http://www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+ 
+	Initial developer(s): Robert Hodges, Linas Virbalas
+	Contributor(s):
+ 
+*##parse("includes/table-counter.vm")
+## Print header or help above the first table.
+#if ( $counter == 1 )
+#if( $help )
+Velocity template to generate staging tables for Tungsten Replicaotr. 
+  
+Transforms MySQL table definition (DDL) to Vertica staging tables.
+Reports errors (ERROR) and warnings (WARN).  Column mappings
+generally map to those used by Tungsten Replicator.
+
+Notes:
+
+  * Each table definition gets a default projection at table creation time
+    through use of ORDER BY clause on tungsten_seqno and tungsten_row_id.
+#else
+#parse("includes/ddl-header.vm")
+CREATE SCHEMA $table.getSchema()##
+;
+#end
+#end
+## Stop processing if help requested.
+#if( $help )
+#stop
+#end
+
+DROP TABLE ##
+${table.getSchema()}.stage_xxx_$table.getName()##
+;
+
+CREATE TABLE ##
+${table.getSchema()}.stage_xxx_$table.getName()##
+#if ( $table.getName().substring(0, 1).matches("[0-9]") ) /* ERROR: table starts with a number, use rename option and a filter */ #end
+
+(
+  tungsten_opcode CHAR(1) ,
+  tungsten_seqno INT ,
+  tungsten_row_id INT ,
+  tungsten_commit_timestamp TIMESTAMP ##
+#foreach ( $col in $table.getAllColumns() )
+## Print leading comma.
+,
+## Print column name. 
+  $col.getName() ##
+### Add datatype specification. 
+#if ( $col.getTypeDescription().contains("DATETIME"))
+DATETIME##
+#elseif ( $col.getTypeDescription().contains("TIMESTAMP") )
+TIMESTAMP##
+#elseif ( $col.getTypeDescription().contains("DATE") )
+DATE##
+#elseif ( $col.getTypeDescription().contains("TIME") )
+TIME##
+#elseif ( $col.getTypeDescription().startsWith("TINYINT") )
+TINYINT##
+#elseif ( $col.getTypeDescription().startsWith("SMALLINT") )
+SMALLINT##
+#elseif ( $col.getTypeDescription().startsWith("MEDIUMINT") )
+INT##
+#elseif ( $col.getTypeDescription().startsWith("INT") )
+INT##
+#elseif ( $col.getTypeDescription().startsWith("BIGINT") )
+NUMBER##
+#elseif ( $col.getTypeDescription().startsWith("DECIMAL(") )
+$col.getTypeDescription()##
+#elseif ( $col.getTypeDescription().startsWith("VARCHAR") )
+#if ( $col.getLength() <= 65000 )
+VARCHAR($col.getLength())##
+#{else}VARCHAR(65000) /* WARN: VARCHAR too long ($col.getLength()) for Vertica */##
+#end
+#elseif ( $col.getTypeDescription().startsWith("CHAR") )
+CHAR($col.getLength())##
+#elseif ( $col.getTypeDescription().startsWith("BINARY") )
+BINARY($col.getLength())##
+#elseif ( $col.getTypeDescription().startsWith("VARBINARY") )
+VARBINARY($col.getLength())##
+#elseif ( $col.getTypeDescription().contains("TEXT") )## TINYTEXT, TEXT, MEDIUMTEXT, LONGTEXT
+VARCHAR(65000) /* WARN: MySQL TEXT translated to max VARCHAR */ ##
+#elseif ( $col.getTypeDescription().contains("BLOB") )## TINYBLOB, BLOB, MEDIUMBLOB, LONGBLOB
+VARBINARY(65000) /* WARN: MySQL BLOB translated to max VARBINARY */ ##
+#elseif ( $col.getTypeDescription().startsWith("FLOAT") )
+FLOAT##
+#elseif ( $col.getTypeDescription().startsWith("DOUBLE") )
+DOUBLE PRECISION##
+#elseif ( $col.getTypeDescription().startsWith("ENUM") )
+VARCHAR($enum.largestElementLen($col.getTypeDescription())) /* $col.getTypeDescription() */##
+#elseif ( $col.getTypeDescription().startsWith("SET") )
+VARCHAR(4000) /* $col.getTypeDescription() */##
+#elseif ( $col.getTypeDescription().equals("BIT(1)") )
+BOOLEAN /* $col.getTypeDescription() */##
+#elseif ( $col.getTypeDescription().startsWith("BIT") )
+CHAR(64) /* WARN: Converted BIT to CHAR */##
+#else
+$col.getTypeDescription() /* ERROR: unrecognized (type=$col.getType(), length=$col.getLength()) */##
+#end ## End of if-then-then...-else.
+#end ## End of column loop. 
+) ORDER BY tungsten_seqno, tungsten_row_id;

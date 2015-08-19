@@ -1,0 +1,297 @@
+Introduction
+===================================
+
+The Tungsten Ruby Library (TRL) is designed to simplify the process of writing scripts that interact with Tungsten Replication and Dataservices. Scripts using TRL may be run 
+
+It features support for the following common use cases. Features not covered by the TRL may be added using common Ruby libraries.
+  * Option Parsing
+  * Logging
+  * JSON parsing/generation
+  * Local command execution
+  * Remote command execution
+  * Object-Oriented access to clustering or replication information
+
+Minimum script contents
+===================================
+
+The minimum script will contain the following and be executable.
+
+#!/usr/bin/env ruby
+
+require "/opt/continuent/tungsten/cluster-home/lib/ruby/tungsten"
+
+class TungstenEnvironment
+  include TungstenScript
+  
+  def main
+    # Script logic here
+  end
+  
+  self.new().run()
+end
+
+Running a script in staging directories
+===================================
+
+class TungstenEnvironment
+
+...
+
+  def configure
+    require_installed_directory?(false)
+  end
+
+...
+end
+
+Adding command-line arguments
+===================================
+
+The TRL will parse command-line arguments for you if you give it information about what is expected. It will automatically create the `--help` output.
+
+class TungstenEnvironment
+
+...
+
+  def configure
+    super()
+    
+    add_option(:boolean, {
+      :on => "--boolean",
+      :help => "A boolean option that will true or false",
+      :default => false
+    })
+    # Access the value via opt(:boolean)
+    
+    add_option(:string, {
+      :on => "--string String",
+      :help => "A string option"
+    })
+    # Access the value via opt(:string)
+    
+    add_option(:integer, {
+      :on => "--integer String",
+      :help => "An integer option",
+      :default => 10
+    }) {|val|
+      val.to_i()
+    }
+    # Access the value via opt(:integer)
+  end
+
+...
+end
+
+Validating the arguments and current environment
+===================================
+
+class TungstenEnvironment
+
+...
+
+  def validate
+    super()
+    
+    # Validate option values here
+  end
+
+...
+end
+
+Logging output
+===================================
+
+The TRL defines several logging functions and command line arguments fore enabling different levels of verbosity.
+
+TU.error(msg) # Always enabled
+TU.warning(msg) # Enabled by adding '-q'
+TU.notice(msg) # Enabled by default or by adding '-n'
+TU.info(msg) # Enabled by adding '-i'
+TU.debug(msg) # Enabled by adding by adding '-v'
+
+Define the 'script_log_path' function in your script and the all messages will be saved to the path returned by the function.
+
+Running commands locally and on remote hosts
+===================================
+
+begin
+  cmd_output = TU.cmd_result("/command/to/run --arg")
+rescue CommandError => ce
+  # Error with the command
+end
+
+begin
+  cmd_output = TU.ssh_result("/command/to/run --arg", host, user)
+rescue MessageError => me
+  # Error with the SSH connection
+rescue RemoteCommandError => rce
+  # Error with the command
+end
+
+Using JSON
+===================================
+
+JSON.parse()
+
+JSON.pretty_generate()
+
+Reading/Storing configuration files
+===================================
+
+The Properties class enables you to read/write/access a nested Hash object. It will store the contents of the Hash in JSON format to enabled easy compatibility.
+
+To read a file into a new Properties object
+-----------------------------------
+
+p = Properties.new()
+p.load("/path/to/config.json")
+
+To write the file when done making changes
+-----------------------------------
+
+p.store("/path/to/config.json")
+
+Reading entries from the properties
+-----------------------------------
+
+The 'getProperty' function will return the nested value or nil if it doesn't exist.
+
+p.getProperty(["dataservices", "alpha", "master"])
+
+The 'getPropertyOr' function will return the nested value or the second argument if a value doesn't exist.
+
+p.getProperty(["dataservices", "alpha", "type"], "master-slave")
+
+Writing entries into the properties
+-----------------------------------
+
+The 'setProperty' function will set nested value to the provided value.
+
+p.setProperty(["dataservices", "alpha", "type"], "fan-in")
+
+The 'setDefault' function will only store the value if a value does not already exist.
+
+p = Properties.new()
+p.setDefault(["dataservices", "alpha", "type"], "fan-in")
+p.setDefault(["dataservices", "alpha", "type"], "master-slave")
+p.getProperty((["dataservices", "alpha", "type"]) # => "fan-in"
+
+Additional functions
+-----------------------------------
+
+The 'reset' function will clear all values
+p.reset()
+
+The 'to_s()' function will return a formatted JSON string
+p.to_s()
+
+Working with Tungsten installations
+===================================
+
+The TungstenInstall class provides an interface to an installed Tungsten directory. The Ruby library will automatically create the constant TI as an instance of TungstenInstall in two cases:
+  * If the library is loaded from an installed directory
+  * If the '--directory' argument is provided
+  
+The TungstenInstall class depends on the Tungsten services to be running. It will provide mixed results if you do not have all services running. You may create multiple TungstenInstall objects to work with many directories. The TI object is just one instance and is provided as a courtesy.
+
+Learning about the installation
+-----------------------------------
+
+# The hostname used to configure this directory. It may differ from the system hostname
+TI.hostname()
+
+# The system user used for running Tungsten services in this directory
+TI.user()
+
+TI.is_replicator?() # => true|false
+TI.is_manager?() # => true|false
+TI.is_connector?() # => true|false
+TI.is_running?("manager") # => true|false
+TI.is_commercial?() # => true|false
+
+Reading dataservice information
+-----------------------------------
+
+The 'dataservices' function returns an array of all configured dataservices.
+TI.dataservices() # => ["alpha"]
+
+Reading expected configuration information
+-----------------------------------
+
+topology = TI.topology("alpha")
+
+pp topology.name
+pp topology.is_composite?()
+pp topology.members
+pp topology.master
+pp topology.connectors
+pp topology.dataservices
+
+Reading dataservice status information
+-----------------------------------
+
+The 'status' function will provide an object that is populated with information for the given dataservice.
+status = TI.status("alpha") # => TungstenStatus object
+
+# Is this a replication-only service with no Manager involvement
+status.is_replication?() # => true|false
+
+# Is this a physical dataservice?
+status.is_physical?() # => true|false
+
+# Is this a composite dataservice?
+status.is_composite?() # => true|false
+
+# Return the current policy, if it exists, for the dataservice
+status.policy() # => MANUAL|MAINTENANCE|AUTOMATIC
+
+# Return the current coordinator, if it exists, for the dataservice
+status.coordinator() # => "db1.nyc.tu.com"
+
+# Return an array of the available datasources or replicators
+status.datasources() # => ["db1.nyc.tu.com", "db2.nyc.tu.com"]
+status.replicators() # => ["db1.nyc.tu.com", "db2.nyc.tu.com"]
+
+# Return information about the datasource or replicator
+status.datasource_role("db1.nyc.tu")
+status.datasource_status("db1.nyc.tu")
+status.datasource_value("db1.nyc.tu", "activeConnectionsCount")
+status.replicator_role("db1.nyc.tu")
+status.replicator_status("db1.nyc.tu")
+status.replicator_latency("db1.nyc.tu")
+status.replicator_value("db1.nyc.tu", "masterListenUri")
+
+Interacting with the replicator
+-----------------------------------
+
+# Get an executable path to trepctl for the dataservice given
+TI.trepctl("alpha") # => "/opt/continuent/tungsten/tungsten-replicator/bin/trepctl -port 10000 -service alpha"
+
+# Read a value from the trepctl status for a dataservice
+TI.trepctl("alpha", "masterListenUri")
+
+# Read a value from the configuration of a dataservice
+TI.trepctl_property("alpha", "replicator.storage.agent.fs.directory")
+
+Interacting with the manager
+-----------------------------------
+
+# Get an executable path to cctrl
+TI.cctrl()
+
+# Execute a command against cctrl trying up to 5 times for a success
+TI.ensure_cctrl("ls", 5)
+
+# Read from the manager API
+TI.manager_api_result("status/alpha", ["serviceState"])
+
+Differences when running against a replication-only installation
+-----------------------------------
+
+The following TungstenInstall functions will not provide values
+  * TI.ensure_cctrl()
+  
+The following Topology functions will not provide values
+  * topology.policy()
+  * topology.coordinator()
+  * topology.datasources()

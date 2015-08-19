@@ -1,0 +1,413 @@
+<!--
+	VMware Continuent Tungsten Replicator
+	Copyright (C) 2015 VMware, Inc. All rights reserved.
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+
+		http://www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+
+    Initial developer(s): Marc Herbert, Jeff Mesnil
+    Contributor(s): Csaba Simon, Robert Hodges
+-->
+
+<project name="tungsten_replicator" default="all" xmlns:jacoco="antlib:org.jacoco.ant">
+    <description>
+        tungsten (continuent.org)
+        Application Server for uni/cluster
+    	Replicator package
+    </description>
+
+    <property file="local.build.properties"/>
+    <property file="build.properties"/>
+
+    <property name="build.dir" value="build"/>
+    <property name="bin.dir" value="bin"/>
+    <property name="conf.dir" value="conf"/>
+    <property name="java.src.dir" value="src/java"/>
+    <property name="test.src.dir" value="test/java"/>
+    <property name="lib-ext.dir" value="lib-ext"/>
+	<property name="samples.dir" value="samples"/>
+	<property name="support.dir" value="support"/>
+	<property name="extractors.dir" value="extractors"/>
+	<property name="appliers.dir" value="appliers"/>
+	<property name="scripts.dir" value="scripts"/>
+    <property name="classes.dir" value="${build.dir}/java/classes"/>
+    <property name="test.classes.dir" value="${build.dir}/test/classes"/>
+    <property name="test.reports" value="${build.dir}/reports"/>
+    <property name="test.work" value="${build.dir}/work"/>
+    <property name="jars.dir" value="${build.dir}/jars"/>
+    <property name="dist.dir" value="${build.dir}/${build.name}"/>
+    <property name="build.jar" value="${jars.dir}/${build.name}.jar"/>
+    <property name="common.build.dir" value="${project.common}/build"/>
+    <property name="common.classes.dir" value="${common.build.dir}/java/classes"/>
+
+    <property name="deploy.host" value="localhost"/>
+    <property name="deploy.dir" value="${user.home}/tungsten"/>
+
+    <!-- Dummy entry for cases where directory does not exist. -->
+    <property name="external.lib.dir" value="lib"/>
+
+    <!-- Code Coverage properties -->
+    <property name="test.coverage.dir" location="${build.dir}/coverage"/>
+    <property name="test.coverage.file" location="${build.dir}/jacoco.exec"/>
+
+    <path id="compile.classpath">
+    	<path location="${common.classes.dir}"/>
+	<fileset dir="lib/">
+		<include name="*.jar"/>
+	</fileset>
+        <fileset dir="${project.common}/lib/">
+            <include name="*.jar"/>
+        </fileset>
+        <fileset dir="${project.common}/lib.tools/">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+
+    <path id="test.classpath">
+        <path refid="compile.classpath"/>
+        <path location="${classes.dir}"/>
+	<fileset dir="${project.common}/lib-test/">
+        <include name="*.jar"/>
+	</fileset>
+    <fileset dir="${external.lib.dir}">
+        <include name="*.jar"/>
+    </fileset>
+
+    </path>
+
+    <path id="javadoc.src.path">
+        <path location="${project.common}/src/java"/>
+        <path location="${java.src.dir}"/>
+    </path>
+
+    <taskdef uri="antlib:org.jacoco.ant" resource="org/jacoco/ant/antlib.xml">
+        <classpath path="${project.common}/lib-test/jacocoant.jar"/>
+    </taskdef>
+	
+    <target name="all" depends="clean, build-dependencies, releases"
+        description="--> creates the release without running JUnit tests"/>
+    <target name="allPlusJunit" depends="clean,build-dependencies,test,releases"
+        description="--> test tungsten and create releases"/>
+    <target name="clean">
+        <delete dir="${build.dir}"/>
+        <delete dir="testdb"/>
+    </target>
+
+    <target name="build-dependencies">
+	<ant antfile="${project.common}/build.xml" inheritall="false" target="all"/>
+    </target>
+
+    <target name="compile">
+        <mkdir dir="${classes.dir}"/>
+        <javac srcdir="${java.src.dir}"
+               destdir="${classes.dir}"
+               classpathref="compile.classpath"
+               source="${javac.source}"
+               target="${javac.target}"
+               encoding="${javac.encoding}"
+               debug="${javac.debug}"
+               deprecation="${javac.deprecation}"
+               verbose="${javac.verbose}"
+               nowarn="${javac.nowarn}"
+        	   includeantruntime="false">
+            <compilerarg value="-Xlint:all"/>
+        </javac>
+    </target>
+
+    <target name="compile-test" depends="compile">
+        <mkdir dir="${test.classes.dir}"/>
+        <javac srcdir="${test.src.dir}" destdir="${test.classes.dir}" classpathref="test.classpath" debug="${javac.debug}" includeantruntime="false"/>
+    </target>
+
+    <target name="jar" depends="compile">
+        <mkdir dir="${jars.dir}"/>
+        <jar destfile="${build.jar}">
+            <manifest>
+                <attribute name="Specification-Title"
+                           value="${specification.title}"/>
+                <attribute name="Specification-Vendor"
+                           value="${specification.vendor}"/>
+                <attribute name="Implementation-Title"
+                           value="${specification.title}"/>
+                <attribute name="Implementation-Vendor"
+                           value="${specification.vendor}"/>
+                <!--
+                <attribute name="Main-class"
+                           value="org.continuent.unicluster.vcf.core.Launcher"/>
+                <attribute name="Class-path"
+                           value="log4j-1.2.14.jar"/>
+                -->
+            </manifest>
+            <fileset dir="${classes.dir}">
+                <include name="**/*.properties"/>
+            </fileset>
+            <fileset dir="${classes.dir}">
+                <include name="**/*.class"/>
+            </fileset>
+        </jar>
+    </target>
+
+    <target name="run" depends="dist" description="--> start tungsten server">
+        <java jar="${dist.dir}/lib/tungsten.jar" fork="true">
+            <sysproperty key="tungsten.logger" value="${tungsten.logger}"/>
+            <arg value="${tungsten.config}"/>
+        </java>
+    </target>
+
+	<target name="test" depends="compile-test" description="--> run unit tests">
+		<testmacro enablecoverage="false"/>
+	</target>
+			
+    <macrodef name="testmacro">
+    	<attribute name="enablecoverage" default="false"/>
+    	<sequential>
+   		<echo message="Unit Test Coverage enabled=@{enablecoverage}"/>
+        <delete dir="${test.coverage.dir}"/>
+    	<mkdir dir="${test.coverage.dir}"/>
+    	<delete dir="${test.reports}"/>
+        <mkdir dir="${test.reports}"/>
+        <delete dir="${test.work}"/>
+        <mkdir dir="${test.work}"/>
+        <copy todir="${test.work}">
+       	    <fileset dir="test/data"/>
+        </copy>
+
+        <copy file="samples/conf/replicator.properties.slave"
+              toFile="${test.work}/replicator.properties"/>
+        <copy file="test.properties" todir="${test.work}"/>
+
+        <jacoco:coverage destfile="${test.coverage.file}" enabled="@{enablecoverage}">
+        <junit printsummary="yes" haltonfailure="no" fork="yes"
+          dir="${test.work}" failureproperty="tests.failed" timeout="500000">
+            <jvmarg value="-Dreplicator.log.dir=." />
+            <jvmarg value="-Dlog4j.rootAppender=console" />
+            <classpath>
+                <pathelement location="${classes.dir}"/>
+                <pathelement location="${test.classes.dir}"/>
+                <pathelement location="${conf.dir}"/>
+                <path refid="compile.classpath"/>
+            	<path refid="test.classpath"/>
+	        <fileset dir="${lib-ext.dir}">
+		    <include name="*.jar"/>
+	        </fileset>
+                <fileset dir="${samples.dir}">
+                    <include name="*.jar"/>
+                    <include name="*.js"/>
+                </fileset>
+            </classpath>
+            <formatter type="xml"/>
+            <batchtest fork="yes" todir="${test.reports}">
+                <fileset dir="${test.src.dir}">
+                    <include name="**/*Test*.java"/>
+                	<exclude name="**/*Abstract*.java"/>
+                	<exclude name="**/*TestReplicatorManager.java"/>
+                	<exclude name="**/*TestOpenReplicatorManager.java"/>
+                </fileset>
+            </batchtest>
+        </junit>
+        </jacoco:coverage>
+
+        <junitreport tofile="${test.reports}/TESTS-TestSuites.xml">
+            <fileset dir="${test.reports}">
+                <include name="TEST-*.xml"/>
+            </fileset>
+            <report format="frames" todir="${test.reports}/html"/>
+        </junitreport>
+    	<fail if="tests.failed" message="Not all unit tests were completed. Process aborted!"/>
+    	</sequential>
+    </macrodef>
+
+    <target name="test-report" description="--> generate junit reports">
+        <junitreport tofile="${test.reports}/TESTS-TestSuites.xml">
+            <fileset dir="${test.reports}">
+                <include name="TEST-*.xml"/>
+            </fileset>
+            <report format="frames" todir="${test.reports}/html"/>
+        </junitreport>
+    </target>
+
+    <target name="dist" depends="jar" description="--> create a ready-to-use tungsten">
+        <mkdir dir="${dist.dir}"/>
+        <copy file="LICENSE" tofile="${dist.dir}/LICENSE"/>
+
+	<mkdir dir="${dist.dir}/bin"/>
+	<copy todir="${dist.dir}/bin">
+	    <fileset dir="${bin.dir}">
+	        <include name="*"/>
+	    	<include name="pg/**"/>
+	        <exclude name="extras"/>
+	    </fileset>
+	</copy>
+	<chmod dir="${dist.dir}/bin" perm="ug+rx" includes="*" excludes="*.bat"/>
+    <chmod dir="${dist.dir}/bin/pg" perm="ug+rx" includes="pg-*"/>
+    	<copy todir="${dist.dir}/conf">
+            <fileset dir="conf" excludes="replicator.properties"/>
+        </copy>
+        <copy todir="${dist.dir}/samples/conf" file="${project.common}/conf/sample.jmx.properties" />
+        <copy todir="${dist.dir}/lib">
+            <fileset dir="${jars.dir}"/>
+        </copy>
+        <!-- 
+        Do not copy Vertica or other non-distributable proprietary JARs into 
+        build.
+        -->
+        <copy todir="${dist.dir}/lib">
+             <fileset dir="lib/">
+             	<include name="*.jar" unless="library.compile.files"/>
+             	<include name="${library.compile.files}" if="library.compile.files"/>
+             	<include name="ruby/*" />
+                <exclude name="vertica*.jar"/>
+             	<exclude name="ojdbc*.jar"/>
+             </fileset>
+        </copy>
+        <mkdir dir="${dist.dir}/lib-ext"/>
+        <copy todir="${dist.dir}/lib-ext">
+            <fileset dir="${lib-ext.dir}">
+            	<include name="*.jar"/>
+                <exclude name="vertica*.jar"/>
+            </fileset>
+        </copy>
+    	<mkdir dir="${dist.dir}/samples"/>
+        <copy todir="${dist.dir}/samples">
+            <fileset dir="${samples.dir}">
+            	<include name="*/**"/>
+            </fileset>
+        </copy>
+    	<mkdir dir="${dist.dir}/support"/>
+        <copy todir="${dist.dir}/support">
+            <fileset dir="${support.dir}">
+            	<include name="*/**"/>
+            </fileset>
+        </copy>
+    	<mkdir dir="${dist.dir}/appliers"/>
+        <copy todir="${dist.dir}/appliers">
+            <fileset dir="${appliers.dir}">
+            	<include name="*/**"/>
+            </fileset>
+        </copy>
+    	<mkdir dir="${dist.dir}/extractors"/>
+        <copy todir="${dist.dir}/extractors">
+            <fileset dir="${extractors.dir}">
+            	<include name="*/**"/>
+            </fileset>
+        </copy>
+
+
+
+	<chmod dir="${dist.dir}/support" perm="ugoa+rx" includes="**/*.sh"/>
+
+	<chmod dir="${dist.dir}/samples" perm="ugoa+rx" includes="**/*.sh"/>
+        <mkdir dir="${dist.dir}/log"/>
+        <mkdir dir="${dist.dir}/var"/>
+    	
+    </target>
+
+    <target name="refresh-services" description="--> refresh JWS scripts and libraries">
+        <property name="services.build.xml"
+            value="${project.common.services}/build.xml"/>
+        <available file="${services.build.xml}" type="file"
+            property="services.build.xml.exists"/>
+        <fail message="common-services/build.xml not found"
+            unless="services.build.xml.exists"/>
+		<ant antfile="${project.common.services}/build.xml" inheritall="false" target="deploy">
+            <property name="build.dir" value="${basedir}"/>
+            <property name="remote.build.properties" value="${basedir}/build.properties"/>
+        </ant>
+    </target>
+
+    <target name="javadoc">
+        <javadoc packagenames="com.continuent.*"
+            classpathref="compile.classpath"
+            sourcepathref="javadoc.src.path"
+            defaultexcludes="yes"
+            destdir="${dist.dir}/doc/javadoc"
+            author="true"
+            version="true"
+            use="true"
+            windowtitle="Tungsten API">
+        </javadoc>
+    </target>
+
+	<target name="zipdoc">
+			<zip destfile="${build.dir}/tungsten-replicator_javadoc.zip">
+				<fileset dir="${dist.dir}/doc/javadoc"/>
+			</zip>
+			<tar compression="gzip" longfile="gnu" destfile="${build.dir}/tungsten-replicator_javadoc.tar.gz">
+				<fileset dir="${dist.dir}/doc/javadoc"/>
+			</tar>
+		</target>
+
+    <target name="releases" depends="dist, javadoc"
+        description="--> create drops of tungsten (.zip &amp; .tgz files)">
+        <tar destfile="${dist.dir}.tgz" compression="gzip" basedir="${dist.dir}" includes="tungsten/**" longfile="gnu">
+            <tarfileset dir="${dist.dir}" mode="755" prefix="${build.name}">
+                <include name="bin/*"/>
+                <include name="samples/**/*.sh"/>
+            	<include name="scripts/**/*.sh"/>
+                <exclude name="bin/*.bat"/>
+            </tarfileset>
+            <tarfileset dir="${dist.dir}" prefix="${build.name}">
+                <include name="bin/*.bat"/>
+            </tarfileset>
+            <tarfileset dir="${dist.dir}" prefix="${build.name}">
+                <exclude name="bin/**"/>
+                <exclude name="samples/**/*.sh"/>
+            	<exclude name="scripts/**/*.sh"/>
+            </tarfileset>
+        </tar>
+        <zip destfile="${dist.dir}.zip" basedir="${dist.dir}" includes="tungsten/**">
+            <zipfileset dir="${dist.dir}" filemode="755" prefix="${build.name}">
+                <include name="samples/**/*.sh"/>
+            	<include name="scripts/**/*.sh"/>
+                <include name="bin/*"/>
+            </zipfileset>
+            <zipfileset dir="${dist.dir}" prefix="${build.name}">
+                <include name="bin/*.bat"/>
+            </zipfileset>
+            <zipfileset dir="${dist.dir}" prefix="${build.name}">
+                <exclude name="bin/** "/>
+            </zipfileset>
+        </zip>
+    	<antcall target="zipdoc"/>
+    </target>
+
+    <target name="protos" description="--> [re-]generate protobuf classes for events">
+        <echo message="protoc 2.6.1 must be in path"/>
+        <exec executable="protoc">
+          <arg value="--version"/>
+        </exec>
+        <exec executable="protoc">
+          <arg value="--java_out=${java.src.dir}"/>
+          <arg value="protobuf/TungstenProtobufMessage"/>
+        </exec>
+    </target>
+
+    <target name="test-coverage"
+    	description="--> generate junit code coverage reports">
+    	<testmacro enablecoverage="true"/>
+        <jacoco:report>
+            <executiondata>
+                <file file="${test.coverage.file}"/>
+            </executiondata>
+            <structure name="JUnit Code Coverage Report">
+                <classfiles>
+                    <fileset dir="${classes.dir}"/>
+                </classfiles>
+                <sourcefiles encoding="UTF-8">
+                    <fileset dir="${java.src.dir}"/>
+                </sourcefiles>
+            </structure>
+            <html destdir="${test.coverage.dir}"/>
+        </jacoco:report>
+    </target>
+
+</project>

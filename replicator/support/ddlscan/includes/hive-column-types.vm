@@ -1,0 +1,64 @@
+### Emit Hive datatype specification. 
+#if ( $col.getTypeDescription().contains("DATETIME"))
+STRING##
+#elseif ( $col.getTypeDescription().contains("TIMESTAMP") )
+TIMESTAMP##
+#elseif ( $col.getTypeDescription().contains("DATE") )
+STRING##
+#elseif ( $col.getTypeDescription().contains("YEAR") )
+INT##
+#elseif ( $col.getTypeDescription().contains("TIME") )
+STRING##
+#elseif ( $col.getTypeDescription().startsWith("TINYINT") )
+#if ( $col.isSigned() ) 
+TINYINT##
+#else
+SMALLINT##
+#end
+#elseif ( $col.getTypeDescription().startsWith("SMALLINT") )
+#if ( $col.isSigned() ) 
+SMALLINT##
+#else
+INT##
+#end
+#elseif ( $col.getTypeDescription().startsWith("MEDIUMINT") )
+INT##
+#elseif ( $col.getTypeDescription().startsWith("INT") )
+#if ( $col.isSigned() ) 
+INT##
+#else
+BIGINT##
+#end
+#elseif ( $col.getTypeDescription().startsWith("BIGINT") )
+#if ( $col.isSigned() ) 
+BIGINT##
+#else
+STRING##
+#end
+#elseif ( $col.getTypeDescription().startsWith("DECIMAL") )
+STRING##
+#elseif ( $col.getTypeDescription().startsWith("VARCHAR") )
+STRING##
+#elseif ( $col.getTypeDescription().startsWith("CHAR") )
+STRING##
+#elseif ( $col.getTypeDescription().startsWith("BINARY") )
+BINARY##
+#elseif ( $col.getTypeDescription().startsWith("VARBINARY") )
+BINARY##
+#elseif ( $col.getTypeDescription().contains("TEXT") )
+STRING## 
+#elseif ( $col.getTypeDescription().contains("BLOB") )
+BINARY## 
+#elseif ( $col.getTypeDescription().startsWith("FLOAT") )
+DOUBLE##
+#elseif ( $col.getTypeDescription().startsWith("DOUBLE") )
+DOUBLE##
+#elseif ( $col.getTypeDescription().startsWith("ENUM") )
+STRING##
+#elseif ( $col.getTypeDescription().startsWith("SET") )
+STRING##
+#elseif ( $col.getTypeDescription().startsWith("BIT") )
+STRING##
+#else
+$col.getTypeDescription() /* ERROR: unrecognized (type=$col.getType(), length=$col.getLength()) */##
+#end## End of column types. 

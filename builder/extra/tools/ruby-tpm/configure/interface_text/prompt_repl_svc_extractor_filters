@@ -1,0 +1,1 @@
+Additional filters to be used while extracting events for this replication service.  These filters are used in the 'binlog-to-q' stage of the direct and master pipelines.

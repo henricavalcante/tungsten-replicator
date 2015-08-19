@@ -1,0 +1,3 @@
+master	- Extract events from the datasource and store them in the THL<br>
+slave 	- Read events from the master THL and apply them to the datasource<br>
+direct	- Extract events from the master datasource and apply them to the datasource

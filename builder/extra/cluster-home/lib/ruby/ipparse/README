@@ -1,0 +1,18 @@
+About
+===
+
+This library provides functionality to parse the IP information for a host. It 
+is designed with a limited feature set based on what is necessary for the 
+VMware Continuent project.
+
+Platform Specifics
+===
+
+On Linux platforms, the library will only return values where the link encapsulation is 'Ethernet'. This eliminates loopback and specialty devices.
+
+Known Limitations
+===
+
+The ipparse library does not support interfaces that include multiple IPV6 
+addresses on a single interface. It will identify the first address and return 
+that. Any additional addresses will be ignored.

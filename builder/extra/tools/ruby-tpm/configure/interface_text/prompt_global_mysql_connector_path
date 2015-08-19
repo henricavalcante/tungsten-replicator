@@ -1,0 +1,9 @@
+Tungsten for MySQL needs a copy of the MySQL Connector/J JDBC driver
+version 5.1.13 or later to access your database servers. If you
+have not done so already, you can download the latest driver from
+this URL:
+
+   http://www.mysql.com/downloads/connector/j/
+
+We recommend that you place the downloaded driver in /opt/mysql/connectorJ,
+but you are welcome to place it in any convenient location.

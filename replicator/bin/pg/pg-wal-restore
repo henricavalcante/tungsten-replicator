@@ -1,0 +1,20 @@
+#!/bin/bash
+# 
+# Script to restore a WAL file on the standby. 
+#
+# Copyright (c) 2009 Continuent, Inc.  All rights reserved.
+
+# Check for ruby.  
+RUBY=`which ruby 2> /dev/null`
+if [ "$RUBY" = "" -o ! -x "$RUBY" ]; then
+  echo "Your system does not appear to have a ruby interpreter installed"
+  echo "Please install ruby and ensure that 'ruby --version' works"
+  exit 1
+fi
+
+# Find our home to ensure we can see libraries.
+BIN_HOME=`dirname $0`
+export REPLICATOR_HOME=$BIN_HOME/../..
+
+# Run the WAL Mgr script.
+$RUBY -I$REPLICATOR_HOME/lib/ruby -I$REPLICATOR_HOME/../cluster-home/lib/ruby $REPLICATOR_HOME/lib/ruby/pg-wal-restore.rb `basename $0` $*

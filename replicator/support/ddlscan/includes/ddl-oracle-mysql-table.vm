@@ -1,0 +1,70 @@
+$table.setSchema( $table.getSchema().toLowerCase() )##
+$table.setTable( $table.getName().toLowerCase() )##
+DROP TABLE IF EXISTS ${table.getSchema()}.${table.getName()};
+CREATE TABLE ##
+${table.getSchema()}.${table.getName()}##
+#if ( $reservedWordsMySQL.contains($table.getName().toUpperCase()) ) /* ERROR: table name is a reserved word, use rename option and a filter */ #end
+
+(
+#if ( $customColumns )
+$customColumns
+#end
+## Columns.
+#foreach ( $col in $table.getAllColumns() )
+$col.setName( $col.getName().toLowerCase() )##
+#set ( $colReserved = false )
+#if ( $reservedWordsMySQL.contains($col.getName().toUpperCase()) )
+#set ( $colReserved = true )
+  $col.getName()_ ##
+#else
+  $col.getName() ##
+#end
+#if ( $col.getTypeDescription().equals("DATE") )
+DATETIME /* $col.getTypeDescription() */##
+#elseif ( $col.getTypeDescription().equals("NUMBER") )
+#if ( $col.getLength() == 0 )
+NUMERIC##
+#elseif( $col.getLength() == 3 )
+TINYINT##
+#elseif( $col.getLength() == 5 )
+SMALLINT##
+#elseif( $col.getLength() == 7 )
+MEDIUMINT##
+#elseif( $col.getLength() == 10 )
+INT##
+#elseif( $col.getLength() == 19 )
+BIGINT##
+#else
+DECIMAL($col.getLength())##
+#end
+ /* $col.getTypeDescription()($col.getLength(), ?) */##
+#elseif ( $col.getTypeDescription().startsWith("FLOAT") )
+$col.getTypeDescription()($col.getLength())##
+#if( $col.getLength() > 53 )
+ /* ERROR: floating point binary precision exceeded */##
+#end
+#elseif ( $col.getTypeDescription().startsWith("VARCHAR") )
+VARCHAR($col.getLength()) /* $col.getTypeDescription()($col.getLength()) */##
+#elseif ( $col.getTypeDescription().equals("LONG") )
+LONGTEXT /* ERROR: $col.getTypeDescription() is unsupported by Oracle CDC */##
+#elseif ( $col.getTypeDescription().equals("BFILE") )
+VARCHAR(1024) /* ERROR: $col.getTypeDescription() is unsupported by Oracle CDC */##
+#elseif ( $col.getTypeDescription().startsWith("CHAR") )
+$col.getTypeDescription()($col.getLength())##
+#elseif ( $col.getTypeDescription().contains("CLOB") )## CLOB, NCLOB
+LONGTEXT /* WARN: $col.getTypeDescription()($col.getLength()) is unsupported by Oracle 10g CDC */##
+#elseif ( $col.getTypeDescription().contains("BLOB") )
+LONGBLOB /* WARN: $col.getTypeDescription()($col.getLength()) is unsupported by Oracle 10g CDC */##
+#elseif ( $col.getTypeDescription().equals("LONG RAW") )
+LONGBLOB /* ERROR: $col.getTypeDescription() is unsupported by Oracle CDC */##
+#elseif ( $col.getTypeDescription().contains("TIMESTAMP") )
+TIMESTAMP /* $col.getTypeDescription() */##
+#elseif ( $col.getTypeDescription().equals("RAW") )
+VARBINARY($col.getLength()) /* $col.getTypeDescription()($col.getLength()) */##
+#else
+$col.getTypeDescription() /* ERROR: unrecognized (type=$col.getType(), length=$col.getLength()) */#end##
+#if ( $col.isNotNull() ) NOT NULL#end##
+#if( $colReserved ) /* WARN: changed column name because of reserved word ($col.getName()) */#end##
+#if( $foreach.hasNext ),
+#end
+#end

@@ -1,0 +1,1 @@
+Additional filters to be used while inserting THL events for this replication service.  These filters are used in the 'q-to-thl' stage of the direct and master pipelines.

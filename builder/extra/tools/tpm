@@ -1,0 +1,21 @@
+#!/bin/bash
+# 
+# Configuration script for tungsten replicator.  Run this script to set
+# up all components. 
+#
+# Copyright (c) 2009 Continuent, Inc.  All rights reserved.
+
+# Check for ruby.  
+RUBY=`which ruby 2> /dev/null`
+if [ "$RUBY" = "" -o ! -x "$RUBY" ]; then
+  echo "Your system does not appear to have a ruby interpreter installed"
+  echo "Please install ruby and ensure that 'ruby --version' works"
+  exit 1
+fi
+
+# Set home and cd to it to ensure consistent working directory. 
+THOME=`dirname $0`
+cd $THOME
+
+# Run the installation with appropriate include for Ruby install files. 
+$RUBY -Iruby-tpm -Iruby-tpm/lib -I../cluster-home/lib/ruby ruby-tpm/configure.rb "$@"

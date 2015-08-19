@@ -1,0 +1,59 @@
+                       TUNGSTEN REPLICATOR README
+                   Copyright (C) 2011-2015 VMware, Inc. 
+                             September 2, 2011
+                           Updated August 16, 2015
+
+1 INTRODUCTION
+
+This release contains software for Tungsten Replicator, which
+provides advanced data replication for open source databases.  This
+software is released under the Apache 2.0 license, a copy of which is
+located in the LICENSE file.  We also make use of other open source
+products, which are listed with attribution and licenses in file
+README.LICENSE.
+
+2 DOCUMENTATION
+
+Documentation for Tungsten Replicator is located on the Continuent website 
+at the following URL: 
+
+  http://docs.continuent.com/tungsten-replicator-4.0/index.html
+
+3 INSTALLATION
+
+To install the replicator follow the steps shown below. 
+
+  1.) Review the installation instructions in the Tungsten 
+  Replicator Installation Guide.  
+
+  2.) Run the 'tpm' command in the tools directory
+  to configure and start Tungsten services for standard replication
+  topologies. The manual has examples for many of them.
+
+4 UPGRADE
+
+The procedure for upgrade is documented here: 
+
+  http://docs.continuent.com/tungsten-replicator-4.0/deployment-upgrades.html
+
+5 LIMITATIONS
+
+Tungsten Replicator is certified for Linux platforms.  We also
+develop and test on Mac OS X though we do not certify operation on
+that platform.  
+
+6 PROBLEMS
+
+This is open source software.  Check the wiki, issues list, and
+mailing lists to get help.
+
+7 COMMERCIAL SUPPORT
+
+VMWare offers support options for Tungsten Replicator.  Please contact
+VMWare, Inc., for more information. 
+
+8 CONCLUSION
+
+Enjoy the software.  If you like it please let us and your friends
+know.  If you don't like something, please file bugs so we can make
+it better.

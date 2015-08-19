@@ -1,0 +1,342 @@
+<!--
+	VMware Continuent Tungsten Replicator
+	Copyright (C) 2015 VMware, Inc. All rights reserved.
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+
+		http://www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+
+    Initial developer(s): Marc Herbert, Jeff Mesnil
+    Contributor(s): Csaba Simon, Robert Hodges
+-->
+
+<project name="tungsten_common" default="all">
+    <description>
+        Tungsten Scale-Out Stack
+    	Commons Component
+        http://community.continuent.com
+    </description>
+
+    <property file="build.properties"/>
+    <property file="local.build.properties"/>
+
+    <property name="top" value="."/>
+    <property name="build.dir" value="build"/>
+    <property name="conf.dir" value="conf"/>
+    <property name="java.src.dir" value="src/java"/>
+    <property name="test.src.dir" value="test/java"/>
+	<property name="test.data.dir" value="test/data"/>
+    <property name="classes.dir" value="${build.dir}/java/classes"/>
+    <property name="test.classes.dir" value="${build.dir}/test/classes"/>
+    <property name="test.reports" value="${build.dir}/reports"/>
+    <property name="test.work" value="${build.dir}/work"/>
+    <property name="jars.dir" value="${build.dir}/jars"/>
+    <property name="dist.dir" value="${build.dir}/tungsten-common"/>
+    <property name="dist.src.dir" value="${build.dir}/tungsten-common-src"/>
+    <property name="tungsten-common.jar" value="${jars.dir}/tungsten-common.jar"/>
+    <property name="tungsten-common-src.jar" value="${jars.dir}/tungsten-common-src.jar"/>
+    <!-- Dummy entry for cases where directory does not exist. -->
+    <property name="external.lib.dir" value="lib"/>
+
+    <property name="deploy.host" value="localhost"/>
+    <property name="deploy.dir" value="${user.home}/tungsten"/>
+
+    <path id="compile.classpath">
+		<fileset dir="lib/">
+			<include name="*.jar" unless="library.compile.files"/>
+			<include name="${library.compile.files}" if="library.compile.files"/>
+		</fileset>
+    	<fileset dir="lib-ext/">
+			<include name="cloudera-4.4/*.jar"/>
+		</fileset>
+    	<fileset dir="lib.tools/">
+			<include name="*.jar" unless="tools.compile.files"/>
+			<include name="${lib.tools.compile.files}" if="lib.tools.compile.files"/>
+		</fileset>
+    </path>
+
+    <path id="test.classpath">
+        <path refid="compile.classpath"/>
+        <path location="${classes.dir}"/>
+		<fileset dir="lib-test/">
+			<include name="*.jar"/>
+		</fileset>
+		<fileset dir="${external.lib.dir}">
+			<include name="*.jar"/>
+		</fileset>
+    </path>
+
+    <target name="all" depends="clean,test, releases"
+            description="--> test code and create releases"/>
+
+	<target name="allExceptJunit" depends="clean,compile, releases"
+            description="Builds the project without running unit tests. "/>
+
+
+    <target name="clean">
+        <delete dir="${build.dir}"/>
+    </target>
+
+
+	<target name="zipdoc">
+		<zip destfile="${build.dir}/tungsten-common_javadoc.zip">
+			<fileset dir="${dist.dir}/docs/javadoc"/>
+		</zip>
+		<tar compression="gzip" destfile="${build.dir}/tungsten-common_javadoc.tar.gz" longfile="gnu">
+			<fileset dir="${dist.dir}/docs/javadoc"/>
+		</tar>
+	</target>
+
+	<target name="compile">
+        <mkdir dir="${classes.dir}"/>
+        <javac srcdir="${java.src.dir}"
+               destdir="${classes.dir}"
+               classpathref="compile.classpath"
+               source="${javac.source}"
+               target="${javac.target}"
+               encoding="${javac.encoding}"
+               debug="${javac.debug}"
+               deprecation="${javac.deprecation}"
+               includeantruntime="false"/>
+    </target>
+
+    <target name="compile-test" depends="compile">
+        <mkdir dir="${test.classes.dir}"/>
+        <javac srcdir="${test.src.dir}" destdir="${test.classes.dir}" classpathref="test.classpath" encoding="${javac.encoding}" includeantruntime="false"/>
+    </target>
+
+    <target name="jar" depends="compile">
+        <mkdir dir="${jars.dir}"/>
+        <jar destfile="${tungsten-common.jar}">
+            <manifest>
+                <attribute name="Specification-Title"
+                           value="${specification.title}"/>
+                <attribute name="Specification-Vendor"
+                           value="${specification.vendor}"/>
+                <attribute name="Implementation-Title"
+                           value="${specification.title}"/>
+                <attribute name="Implementation-Vendor"
+                           value="${specification.vendor}"/>
+                <attribute name="Class-path"
+                           value="log4j-1.2.15.jar"/>
+            </manifest>
+            <fileset dir="${classes.dir}">
+                <include name="**/*.properties"/>
+            </fileset>
+            <fileset dir="${classes.dir}">
+                <include name="**/*.class"/>
+            </fileset>
+        </jar>
+        <jar destfile="${tungsten-common-src.jar}">
+            <manifest>
+                <attribute name="Specification-Title"
+                           value="${specification.title}"/>
+                <attribute name="Specification-Vendor"
+                           value="${specification.vendor}"/>
+                <attribute name="Implementation-Title"
+                           value="${specification.title}"/>
+                <attribute name="Implementation-Vendor"
+                           value="${specification.vendor}"/>
+            </manifest>
+            <fileset dir="${java.src.dir}">
+                <include name="**/*.java"/>
+            </fileset>
+        </jar>
+
+    </target>
+
+    <target name="run" depends="dist" description="--> start tungsten server">
+        <java jar="${dist.dir}/lib/tungsten.jar" fork="true">
+            <sysproperty key="tungsten.logger" value="${tungsten.logger}"/>
+            <arg value="${tungsten.config}"/>
+        </java>
+    </target>
+
+    <target name="test" depends="compile-test" description="--> run unit tests">
+        <delete dir="${test.reports}"/>
+        <mkdir dir="${test.reports}"/>
+        <delete dir="${test.work}"/>
+        <mkdir dir="${test.work}"/>
+    	<copy todir="${test.work}">
+    		<fileset dir="${test.data.dir}">
+    			<include name="*"/>
+    		</fileset>
+    		<fileset dir="${conf.dir}">
+    		    <include name="*"/>
+    		</fileset>
+   		</copy>
+        <junit printsummary="yes" haltonfailure="no" fork="yes"
+            dir="${test.work}" failureproperty="tests.failed">
+            <classpath>
+                <pathelement location="${classes.dir}"/>
+                <pathelement location="${test.classes.dir}"/>
+                <pathelement location="${conf.dir}"/>
+                <path refid="compile.classpath"/>
+            	<path refid="test.classpath"/>
+            </classpath>
+            <formatter type="xml"/>
+            <batchtest fork="yes" todir="${test.reports}">
+                <fileset dir="${test.src.dir}">
+                    <include name="**/*Test*.java"/>
+                	<exclude name="**/*Abstract*.java"/>
+                </fileset>
+            </batchtest>
+        </junit>
+        <junitreport tofile="${test.reports}/TESTS-TestSuites.xml">
+            <fileset dir="${test.reports}">
+                <include name="TEST-*.xml"/>
+            </fileset>
+            <report format="frames" todir="${test.reports}/html"/>
+        </junitreport>
+    	<fail if="tests.failed" message="Not all unit tests were completed. Process aborted!"/>
+    </target>
+
+    <target name="dist" depends="dist-bin, dist-src"
+            description="--> build distribution"/>
+
+    <target name="dist-bin" depends="jar"
+            description="--> build binary distribution">
+        <mkdir dir="${dist.dir}"/>
+        <!-- No scripts at bin directory at the moment that we should care about
+    	<copy filtering="true"
+              file="bin/tungsten.sh"
+              tofile="${dist.dir}/bin/tungsten.sh">
+        </copy>
+        <chmod dir="${dist.dir}/bin" perm="ugo+rx" includes="*.sh"/>
+        -->
+        <copy todir="${dist.dir}/lib">
+            <fileset dir="${jars.dir}"/>
+        </copy>
+        <available property="has.conf" file="conf" type="dir"/>
+    	<copy todir="${dist.dir}/conf" failonerror="has.conf">
+            <fileset dir="conf"/>
+        </copy>
+        <copy todir="${dist.dir}/lib">
+            <fileset dir="lib/">
+            	<include name="*.jar" unless="library.compile.files"/>
+            	<include name="${library.compile.files}" if="library.compile.files"/>
+            </fileset>
+        </copy>
+        <mkdir dir="${dist.dir}/lib-ext"/>
+    </target>
+
+    <target name="dist-src" depends="jar"
+            description="--> build source distribution">
+        <mkdir dir="${dist.src.dir}"/>
+        <!-- No scripts at bin directory at the moment -->
+        <mkdir dir="${dist.src.dir}/bin"/>
+
+        <copy todir="${dist.src.dir}">
+            <fileset file="LICENSE"/>
+            <fileset file="README"/>
+            <fileset file="build.properties"/>
+            <fileset file="build.xml"/>
+        </copy>
+
+        <copy todir="${dist.src.dir}/conf">
+            <fileset dir="conf"/>
+        </copy>
+        <copy todir="${dist.src.dir}/doc">
+            <fileset dir="doc"/>
+        </copy>
+        <copy todir="${dist.src.dir}/lib">
+            <fileset dir="lib"/>
+        </copy>
+        <copy todir="${dist.src.dir}/lib-test">
+            <fileset dir="lib-test"/>
+        </copy>
+        <copy todir="${dist.src.dir}/src">
+            <fileset dir="src"/>
+        </copy>
+        <copy todir="${dist.src.dir}/test">
+            <fileset dir="test"/>
+        </copy>
+    </target>
+
+    <target name="docs">
+        <javadoc packagenames="com.continuent.*"
+            sourcepath="${java.src.dir}"
+            classpathref="compile.classpath"
+            defaultexcludes="yes"
+            destdir="${dist.dir}/docs/javadoc"
+            author="true"
+            version="true"
+            use="true"
+            windowtitle="Tungsten API">
+        </javadoc>
+    </target>
+
+    <target name="releases" depends="dist, docs"
+        description="--> create distributable softare (.zip &amp; .tgz files)">
+		<available property="has.readme" file="README"/>
+
+    	<copy file="README" tofile="${dist.dir}/README" failonerror="${has.readme}"/>
+    	<available property="has.license" file="README"/>
+        <copy file="LICENSE" tofile="${dist.dir}/LICENSE" failonerror="${has.license}"/>
+        <tar destfile="${dist.dir}.tgz" compression="gzip" basedir="${dist.dir}" includes="none" longfile="gnu">
+            <tarfileset dir="${dist.dir}" mode="755" prefix="tungsten-common">
+                <include name="bin/tungsten.sh"/>
+            </tarfileset>
+            <tarfileset dir="${dist.dir}" prefix="tungsten-common">
+                <exclude name="bin/**"/>
+            </tarfileset>
+        </tar>
+        <tar destfile="${dist.dir}-src.tgz" compression="gzip" basedir="${dist.src.dir}" includes="none" longfile="gnu">
+            <tarfileset dir="${dist.src.dir}" prefix="tungsten-common-src">
+                <include name="*/**"/>
+            </tarfileset>
+        </tar>
+
+        <zip destfile="${dist.dir}.zip" basedir="${dist.dir}" includes="none">
+            <zipfileset dir="${dist.dir}" filemode="755" prefix="tungsten-common">
+                <include name="bin/tungsten.sh"/>
+            </zipfileset>
+            <zipfileset dir="${dist.dir}" prefix="tungsten-common">
+                <exclude name="bin/**cd "/>
+            </zipfileset>
+        </zip>
+        <zip destfile="${dist.dir}-src.zip" basedir="${dist.src.dir}" includes="none">
+            <zipfileset dir="${dist.src.dir}" prefix="tungsten-common-src">
+                <include name="*/**"/>
+            </zipfileset>
+        </zip>
+    	<antcall target="zipdoc"/>
+    </target>
+
+    <target name="deploy" depends="dist">
+        <condition property="deploy.localhost">
+          <equals arg1="localhost" arg2="${deploy.host}"/>
+        </condition>
+        <!-- One of these must work since both depend on deploy.localhost. -->
+        <antcall target="deploy.local"/>
+        <antcall target="deploy.remote"/>
+    </target>
+
+    <!-- Copy tungsten directory to another local directory. -->
+    <target name="deploy.local" if="deploy.localhost">
+        <echo>Deploying to ${deploy.dir}...</echo>
+        <mkdir dir="${deploy.dir}/tungsten"/>
+        <copy todir="${deploy.dir}/tungsten">
+            <fileset dir="${dist.dir}" includes="**/*" />
+        </copy>
+    </target>
+
+    <!-- Rsync tungsten directory to another host. -->
+    <target name="deploy.remote" unless="deploy.localhost">
+        <echo>Deploying to ${deploy.host}:${deploy.dir}...</echo>
+        <exec executable="ssh">
+            <arg line="${deploy.host} mkdir -p ${deploy.dir}" />
+        </exec>
+        <exec executable="rsync">
+            <arg line="-az --checksum --delete-after --rsh=ssh ${dist.dir} ${deploy.host}:${deploy.dir}" />
+        </exec>
+    </target>
+</project>

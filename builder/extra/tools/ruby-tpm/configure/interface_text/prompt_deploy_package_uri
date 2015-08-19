@@ -1,0 +1,6 @@
+What URL would you like to use as a source for the deployed Tungsten software?
+
+Examples:
+https://example.com/tungsten-enterprise-x.y.tar.gz
+file://root@192.168.0.1/root/tungsten-enterprise-x.y.tar.gz
+file://localhost/home/jdoe/tungsten-enterprise-x.y.tar.gz

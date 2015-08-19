@@ -1,0 +1,4 @@
+Tungsten Replicator can automatically go online after start-up.  This
+is called auto-enabling and is normally the desired behavior.
+However, if you are migrating from MySQL Replication or want to
+start replication manually, you should not enable this feature.

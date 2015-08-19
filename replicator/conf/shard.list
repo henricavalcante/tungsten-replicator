@@ -1,0 +1,27 @@
+# SHARD MAP FILE.  
+# This file contains shard handling rules used in the ShardListPartitioner 
+# class for parallel replication.  If unchanged shards will be hashed across
+# available partitions. 
+
+# You can assign shards explicitly using a shard name match, where the form
+# is <db>=<partition>.  
+#common1=0
+#common2=0
+#db1=1
+#db2=2
+#db3=3
+
+# Default partition for shards that do not match explicit name. 
+# Permissible values are either a partition number or -1, in which 
+# case values are hashed across available partitions.  (-1 is the 
+# default. 
+#(*)=-1
+
+# Comma-separated list of shards that require critical section to run. 
+# A "critical section" means that these events are single-threaded to 
+# ensure that all dependencies are met. 
+#(critical)=common1,common2
+
+# Method for channel hash assignments.  Allowed values are round-robin and 
+# string-hash. 
+(hash-method)=round-robin

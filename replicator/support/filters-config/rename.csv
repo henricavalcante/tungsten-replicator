@@ -1,0 +1,93 @@
+#######################################
+# RenameFilter sample definition file #
+#######################################
+
+# CSV format:
+#
+# originalSchema,originalTable,originalColumn,newSchema,newTable,newColumn
+#
+# Left side (first three columns) may contain a special character:
+#
+# * - match all [schemas/tables/columns] (part-string matching not supported)
+#
+# Right side (last three columns) may contain a special character:
+#
+# - - leave as original
+
+# In case of multiple entries matching the same request, order of preference is
+# important. Consider the following example:
+#
+# schemac,*,*,schemac1,-,-
+# schemac,tablew,*,schemac2,-,-
+# 
+# In this example all tables are moved to "schemac1" except "tablew", which is
+# moved to "schemac2". Here's the rules being followed:
+#
+# Order of preference when looking up schema name:
+#
+# 1. schema.table
+# 2. schema.*
+#
+# Order of preference when looking up table name:
+#
+# 1. schema.table
+# 2. *.table
+#
+# Order of preference when looking up column name:
+#
+# 1. schema.table
+# 2. schema.*
+# 3. *.table
+# 4. *.*
+#
+# By the way, order of preference is fixed in order to have a fast lookup.
+
+# Notes:
+#
+# * Case sensitivity matters. If it is required to ignore case, use another
+#   filter in the pipeline before to transform case.
+#
+# * For renaming columns, make sure to have column names in THL events. For
+#   some DBMS types a separate filter (eg. ColumnNameFilter) might be needed.
+
+############
+# Examples #
+############
+
+# Rename schema for all tables.
+schemac,*,*,schemac1,-,-
+
+# This table moved to a different schema.
+schemac,tablew,*,schemac2,-,-
+
+# Table renamed and moved to a different schema.
+schemav,tablee,*,schemav1,tableee,-
+
+# Rename table in a particular schema.
+schemab,tabler,*,-,tabler1,-
+
+# Rename each table with a given name across all schemas.
+*,tablet,*,-,tablet1,-
+
+# Rename column of this particular table.
+schemaz,tableq,cola,-,-,colaa # Column renaming doesn't change schema/table.
+
+# Rename column of each table with a given name across all schemas.
+*,tablew,colb,-,-,colbb
+
+# Rename column occurring in any table across all schemas.
+*,*,colc,-,-,colcc
+
+# Rename column across all tables in the given schema.
+schemax,*,cold,-,-,coldd
+
+# Renamed schema, but one table is left in it and some of its columns renamed.
+scheman,*,*,scheman2,-,-
+scheman,tabley,*,-,tabley2,- # Leave table in original schema.
+scheman,tabley,colj,-,-,colj2
+scheman,tabley,colk,-,-,colk2
+
+# Renamed schema and one table with one column in it.
+schemam,*,*,schemam2,-,-
+schemam,tableu,*,schemam2,tableu2,- # Move renamed table to new schema too.
+schemam,tableu,colj,-,-,colj2 # Column renaming doesn't change schema/table.

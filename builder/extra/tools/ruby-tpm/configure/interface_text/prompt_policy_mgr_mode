@@ -1,0 +1,5 @@
+Tungsten can operate in automatic policy mode, which means that
+masters will automatically fail over, or in manual mode, which means
+that masters will be taken offline but you must issue a failover
+command yourself.  The value you select should be consistent across
+all hosts in the cluster.

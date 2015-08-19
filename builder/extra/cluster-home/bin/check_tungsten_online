@@ -1,0 +1,107 @@
+#!/bin/bash
+#
+# Simple Bash Script To Check Tungsten Services
+# Nagios Plugin For NRPE
+#
+# This script does not accept any arguments.  It will return a warning if any 
+# of Tungsten resources is not in an {{ONLINE}} state.  It uses the output of 
+# the {{ls resources}} command to determine the current state.
+#
+OK_STATE=0
+WARNING_STATE=1
+CRITICAL_STATE=2
+THOME=`dirname $0`
+TREPCTL_ARGS=""
+
+error_message=""
+error_messaage_glue=""
+offline_count=0
+
+function display_help()
+{
+  echo "Usage: ./check_tungsten_online [-h]"
+  echo " --port                 RMI port for the replicator"
+  echo " -h                     Display this message"
+  exit 0
+}
+
+for arg
+do
+  delim=""
+  case "$arg" in
+    #translate --gnu-long-options to -g (short options)
+    --port) args="${args}-P ";;
+    #pass through anything else
+    *) [[ "${arg:0:1}" == "-" ]] || delim="\""
+      args="${args}${delim}${arg}${delim} ";;
+  esac
+done
+
+#Reset the positional parameters to the short options
+eval set -- $args
+
+while getopts "P:h" Option
+do
+  case $Option in
+    h )
+    display_help
+    ;;
+    P )
+    TREPCTL_ARGS="${TREPCTL_ARGS} -port ${OPTARG}"
+    ;;
+  esac
+done
+
+replicator_running=`${THOME}/../../tungsten-replicator/bin/replicator status | grep "PID" | wc -l`
+# Check the manager status
+if [ $replicator_running -eq 0 ]
+then
+  echo "CRITICAL: Replicator is not running"
+  exit $CRITICAL_STATE
+fi
+
+out=`${THOME}/../../tungsten-replicator/bin/trepctl ${TREPCTL_ARGS} version`
+if [ $? -ne 0 ]
+then
+  echo "CRITICAL: Unable to connect to the replicator"
+  exit $CRITICAL_STATE
+fi
+
+current_service=""
+for line in `${THOME}/../../tungsten-replicator/bin/trepctl ${TREPCTL_ARGS} services | grep -E "state|serviceName" | cut -f 2 -d ":" | tr -d " "`
+do
+  if [[ $current_service == "" ]]
+  then
+    current_service=$line
+  else
+    if [[ $line != "ONLINE" ]]
+    then
+      offline_count=$(($offline_count+1))
+      error_message="$error_message$error_message_glue$current_service"
+      error_message_glue=", "
+    fi
+
+    current_service=""
+  fi
+done
+
+if [ $offline_count -gt 0 ]
+then
+  if [ $offline_count -gt 1 ]
+  then
+    echo "CRITICAL: $error_message are not online"
+  else
+    echo "CRITICAL: $error_message is not online"
+  fi
+  
+  exit $CRITICAL_STATE
+fi
+
+#if [ $offline_count -eq 1 ]
+#then
+#  echo "WARNING: $error_message is offline"
+#  exit $WARNING_STATE
+#fi
+
+echo "OK: All services are online"
+exit $OK_STATE

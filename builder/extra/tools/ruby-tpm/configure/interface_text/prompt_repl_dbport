@@ -1,0 +1,4 @@
+Tungsten needs the DBMS server port number as well a login and
+password to use when connecting to the database server.  This account
+must exist and have full administrative privileges including SUPER
+to operate replication.

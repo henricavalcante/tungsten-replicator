@@ -1,0 +1,129 @@
+package TungstenProtobuf;
+
+option java_package = "com.continuent.tungsten.replicator.thl.protobuf";
+option java_outer_classname = "TungstenProtos";
+
+message Header {
+  required int64 seqno = 1;
+  required int32 fragno = 2;
+  required bool lastFrag = 3;
+  required int64 sourceTstamp = 4;
+  required int64 extractedTstamp = 5;
+  required string sourceId = 6;
+  required int64 epochNumber = 7;
+  required string eventId = 8;
+  required string shardId = 9;
+  required bool filteredEvent = 10;
+  optional int64 seqnoEnd = 11;
+  optional int32 fragnoEnd = 12;
+}
+
+message ProtobufOneRowChange {
+  enum ActionType {
+    INSERT=1;
+    DELETE=2;
+    UPDATE=3;
+  }
+
+  message ProtobufColumnSpec {
+    required int32  index = 1;
+    optional string name = 2;
+    required int32  type = 3;
+    required bool   signed = 4;
+    required int32  length = 5;
+    required bool   notNull = 6;
+    optional string typeDescription = 7;
+  }
+
+  message ProtobufRowValue {
+    message ProtobufColumnVal {
+      enum Type {INT=1; LONG=2; FLOAT=3; DOUBLE=4; STRING=5; TIMESTAMP=6; BIT=7; TIME=8; DATE=9; BLOB=10; NULL=11;DECIMAL=12; BINARYSTRING=13;}
+      required Type type = 1;
+      optional sint32 intValue = 2;
+      optional sint64 longValue = 3;
+      optional float floatValue = 4;
+      optional double doubleValue = 5;
+      optional string stringValue = 6;
+      optional bytes bytesValue = 7;
+    }
+  
+    repeated ProtobufColumnVal columnValue = 1;
+  }
+
+  required string    schemaName = 1;
+  required string    tableName = 2;
+  required ActionType  action = 3;
+
+  repeated ProtobufColumnSpec keySpec= 4;
+  repeated ProtobufColumnSpec columnSpec = 5;
+
+  repeated ProtobufRowValue keyValues = 6;
+  repeated ProtobufRowValue columnValues = 7;
+  optional sint64    tableId = 8;
+}
+
+message ProtobufRowChangeData {  
+  repeated ProtobufOneRowChange rowChange = 1;
+  repeated ProtobufEventOption options = 2;
+}
+
+message ProtobufOneChange {
+  enum Type {
+    ROW_DATA=1;
+    STATEMENT_DATA=2;
+    ROW_ID_DATA=3;
+    LOAD_DATA_FILE_FRAGMENT=4;
+    LOAD_DATA_FILE_QUERY=5;
+    LOAD_DATA_FILE_DELETE=6;
+  }
+  required Type type = 1;
+  optional ProtobufRowChangeData data = 2;
+  optional ProtobufStatementData statement = 3;
+  optional ProtobufRowIdData rowId = 4;
+  optional ProtobufLoadDataFileFragment fileFragment =5;
+  optional ProtobufLoadDataFileQuery fileQuery=6;
+  optional ProtobufLoadDataFileDelete fileDelete=7;
+}
+
+message ProtobufReplDBMSEvent {
+  repeated ProtobufOneChange change = 1;
+  repeated ProtobufEventOption metadata = 2;
+  repeated ProtobufEventOption options = 3;
+}
+
+message ProtobufStatementData {
+  optional string defaultSchema = 1;
+  optional int64 timestamp = 2;
+  optional string query = 3;
+  repeated ProtobufEventOption options = 4;
+  required int32 errorCode = 5;
+  optional bytes queryAsBytes = 6;
+}
+
+message ProtobufEventOption {
+  required string name = 1;
+  required string value = 2;
+}
+
+message ProtobufRowIdData
+{
+  required int64 id = 1;
+  optional int32 type = 2;
+}
+
+message ProtobufLoadDataFileFragment {
+    required int32 fileId=1;
+    required bytes data=2;
+    optional string database = 3;
+}
+
+message ProtobufLoadDataFileQuery {
+  required ProtobufStatementData statement = 1;
+  required int32 fileId=2;
+  required int32 filenameStartPos=3;
+  required int32 filenameEndPos=4;
+}
+
+message ProtobufLoadDataFileDelete {
+  required int32 int32 =1;
+}

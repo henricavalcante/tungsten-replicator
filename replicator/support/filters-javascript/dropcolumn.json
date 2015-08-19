@@ -1,0 +1,26 @@
+[
+    {
+        "schema": "vip",
+        "table": "clients",
+        "columns": [
+            "personal_code",
+            "birth_date",
+            "email"
+        ]
+    },
+    {
+        "schema": "*",
+        "table": "credit_cards",
+        "columns": [
+            "cc_type",
+            "cc_number"
+        ]
+    },
+    {
+        "schema": "*",
+        "table": "*",
+        "columns": [
+            "telephone"
+        ]
+    }
+]

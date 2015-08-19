@@ -1,0 +1,46 @@
+                          JavaScript filter example
+
+1 Overview
+
+This is a description about sample filter.js script.
+
+JavaScriptFilter allows to develop JavaScript filters without coding any Java
+at all. The script is precompiled once and then called on every filtered event.
+
+WARNING: filter.js is intended only for explanatory purposes and not to be used
+in production environment, unless you fully understand what it does.
+
+2 Getting Started
+
+In order to use this sample filter one should define it in
+replicator.properties first. There is an example of how to accomplish that in
+provided replicator.properties.mysql or replicator.properties.oracle files
+(see FILTERS section):
+
+  replicator.filter.javascript=com.continuent.tungsten.replicator.filter.JavaScriptFilter
+  replicator.filter.javascript.script=../support/filters-javascript/filter.js
+  replicator.filter.javascript.sample_custom_property="Sample value"
+  
+To activate this filter add it to replicator.prefilter or replicator.postfilter
+property (multiple filters may be separated with commas):
+
+  replicator.prefilter=javascript  
+or
+  replicator.postfilter=javascript
+
+3 Usage
+
+After completing steps described above, filter.js will be compiled next time
+you start replicator and called out on every event. Look for messages coming
+from this filter in /log/trep.log
+
+As you can see from the source code, filter.js will delay every event 1 second
+and print a short comment of what was inside the event.
+
+4 See also
+
+filter.js has more information on how to develop your own JavaScript filter in
+its comments.
+
+For further details please see Javadoc for class
+com.continuent.tungsten.replicator.filter.JavaScriptFilter

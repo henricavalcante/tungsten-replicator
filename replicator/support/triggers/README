@@ -1,0 +1,64 @@
+                     Using Triggers with Replication
+
+1 Overview
+
+There are many cases where it is useful to fire triggers on the
+master but not on the slave (or vice-versa).  This sample provides
+a script that demonstrates how to write triggers that behave
+correctly in each case. 
+
+2 Determining Whether You Are Running on a Slave or Master
+
+Tungsten Replicator automatically sets a session variable named TREPSLAVE 
+when it is applying updates to a slave.  Triggers on the slave can test 
+this variable to determine whether they are operating on a master or slave.  
+
+- On a master the variable will not exist
+- On a slave TREPSLAVE will exist and will be set to the value 'YES'
+
+Triggers that should run on one database but not the other must check this 
+value.  The usual syntax to do so is something like the following: 
+
+  ...
+    if @TREPSLAVE is null then
+      -- We are on the master; do something!
+    end if;
+  ...
+
+3 MySQL Operation and Gotchas
+
+MySQL is somewhat complex because it supports both row and statement
+replication.  MySQL row replication works exactly as you would
+expect.  However, when running with statement replication, you must
+be aware of the following peculiarity:  MySQL also replicates values
+of all session variables used by the trigger.
+
+This behavior means that when running in statement most on the
+master the TREPSLAVE value (i.e., null) is copied over the slave.
+The trigger therefore runs on the slave as well.  MySQL does this
+in order to ensure that triggers have exactly the same context on
+both master and slave.  It also means that the triggers will run
+in both places.  
+
+Running triggers in both databases is what users generally want.
+However, there are cases were you might not like this behavior and 
+only want the triggers to run on the master.  In this case you can 
+configure a filter to suppress the command that sets the session 
+variable.  
+
+3 Sample Usage
+
+The sample script triggers.mysql.sql shows an example trigger.  The 
+sample trigger contains the following code to determine whether it is 
+executing on a master or a slave:  
+
+To install the sample follow the steps shown below.  
+
+  1.) Set up master/slave replication. 
+
+  2.) Run the sample script against the master database, for example:
+
+      mysql -uroot sample < triggers.mysql.sql
+
+Test the trigger behavior by insertting rows into table sample_table. 
+Look on the master and slave to compare results.  

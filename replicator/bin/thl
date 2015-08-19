@@ -1,0 +1,84 @@
+#!/bin/sh
+#!/bin/bash
+# VMware Continuent Tungsten Replicator
+# Copyright (C) 2009-2015 VMware, Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Replicator *nix thl utility's startup script
+#
+# Environmental variables accepted by this script: 
+#   JAVA_HOME - Java release directory
+#   JVM_OPTIONS - Java VM options (e.g. -Xmx=1024M)
+#   REPLICATOR_LOG_DIR - Replicator log directory (defaults to $RPHOME/log)
+#   REPLICATOR_RMI_PORT - Port used for JMX administration calls
+
+# THL utility main class. 
+THL_CTRL=com.continuent.tungsten.replicator.thl.THLManagerCtrl
+
+# Log4j properties to use for THL utility.
+THL_CTRL_LOG4J=log4j-utils.properties
+
+# Find home. 
+RPBIN=`dirname $0`
+RPHOME=`cd $RPBIN/..; pwd`
+CLUSTER_HOME=$RPHOME/../cluster-home
+
+# Add jars from all directories to class path.
+for jar in $RPHOME/lib/*.jar $RPHOME/lib-ext/*.jar; do 
+  if [ -z "$CP" ]; then
+    CP=$jar
+  else
+    CP=$CP:$jar
+  fi
+done
+
+# Add configuration directory to class path. 
+CP=$CP:$RPHOME/conf
+# Add cluster-home/lib to class path
+CP=$CP:$CLUSTER_HOME/lib/*
+
+
+# Find Java.
+if [ -z "$JAVA_HOME" ]; then
+  JAVA=`which java`
+else
+  JAVA=$JAVA_HOME/bin/java
+fi
+if [ ! -x "$JAVA" ]; then
+  echo "Cannot find java command.  Please set the JAVA_HOME environment"
+  echo "variable or add java to the execution path."
+  exit 1
+fi
+
+# Set log directory. 
+if [ -z "$REPLICATOR_LOG_DIR" ]; then 
+  REPLICATOR_LOG_DIR=$RPHOME/log
+fi
+if [ ! -d "$REPLICATOR_LOG_DIR" ]; then
+  echo "Cannot find replicator log directory: $REPLICATOR_LOG_DIR"
+  exit 1
+fi
+JVM_OPTIONS="${JVM_OPTIONS} -Dreplicator.log.dir=$REPLICATOR_LOG_DIR" 
+
+# Set RMI port. 
+if [ ! -z "$REPLICATOR_RMI_PORT" ]; then
+  JVM_OPTIONS="${JVM_OPTIONS} -Dreplicator.rmi_port=$REPLICATOR_RMI_PORT"
+fi
+
+# Uncomment to debug replicator THL client. 
+#REPLICATOR_JVMDEBUG_PORT=54002
+#JVM_OPTIONS="${JVM_OPTIONS} -enableassertions -Xdebug -Xnoagent -Djava.compiler=none -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=$REPLICATOR_JVMDEBUG_PORT"
+
+# Run the utility. 
+$JAVA -cp $CP -Dreplicator.home.dir=$RPHOME -Dlog4j.configuration=$THL_CTRL_LOG4J $JVM_OPTIONS $THL_CTRL $*

@@ -1,0 +1,58 @@
+#!/bin/sh
+# Tungsten Password Manager @VERSION@
+# (c) 2009 Continuent, Inc.  All rights reserved. 
+#
+# Password Manager *nix start script
+#
+# Environmental variables accepted by this script: 
+#   JAVA_HOME - Java release directory
+#   JVM_OPTIONS - Java VM options (e.g. -Xmx=1024M)
+
+# Password manager class.  
+PASWORD_MGR_NAME=com.continuent.tungsten.common.security.PasswordManagerCtrl
+
+# Find home. 
+PASWORD_MGR_RPBIN=`dirname $0`
+PASWORD_MGR_HOME=`cd $PASWORD_MGR_RPBIN/..; pwd`
+CLUSTER_HOME=$PASWORD_MGR_HOME/../cluster-home
+
+# Add configuration directory to class path. 
+CP=$CP:$PASWORD_MGR_HOME/conf
+CP=$CP:$PASWORD_MGR_HOME/../tungsten-replicator/lib/*		# Add all jars
+CP=$CP:$CLUSTER_HOME/lib/*									# Add cluster-home/lib
+
+
+# Find Java.
+if [ -z "$JAVA_HOME" ]; then
+  JAVA=`which java`
+else
+  JAVA=$JAVA_HOME/bin/java
+fi
+if [ ! -x "$JAVA" ]; then
+  echo "Cannot find java command.  Please set the JAVA_HOME environment"
+  echo "variable or add java to the execution path."
+  exit 1
+fi
+
+# Set log directory. 
+if [ -z "$TPASSWD_LOG_DIR" ]; then 
+  TPASSWD_LOG_DIR=$CLUSTER_HOME/log
+fi
+if [ ! -d "$TPASSWD_LOG_DIR" ]; then
+  echo "Cannot find tpasswd log directory: $TPASSWD_LOG_DIR"
+  exit 1
+fi
+JVM_OPTIONS="${JVM_OPTIONS} -Dtpasswd.log.dir=$TPASSWD_LOG_DIR" 
+
+# Set other JVM options
+JVM_OPTIONS="${JVM_OPTIONS} \
+-Dcluster.home=$CLUSTER_HOME \
+-Dlog4j.configuration=log4j.commandline.properties \
+" 
+
+# Uncomment to debug Password Manager. 
+#PASSWORD_MANAGER_JVMDEBUG_PORT=54002
+#JVM_OPTIONS="${JVM_OPTIONS} -enableassertions -Xdebug -Xnoagent -Djava.compiler=none -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=$PASSWORD_MANAGER_JVMDEBUG_PORT"
+
+# Run the utility. 
+$JAVA -cp $CP $JVM_OPTIONS $PASWORD_MGR_NAME $*
