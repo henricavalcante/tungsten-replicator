@@ -82,7 +82,6 @@ SECTION 4: Common Public License, V1.0
 
 SECTION 5: GNU General Public License, V2.0
 
-   >>> ruby-ifconfig-1.2
 
 
 SECTION 6: GNU Lesser General Public License, V2.1
@@ -1573,8 +1572,7 @@ junit-4.4.jar
 
 GNU General Public License, V2.0 is applicable to the following component(s).
 
-
->>> ruby-ifconfig-1.2
+> (None) 
 
 LICENSE: GPL 2.0
 

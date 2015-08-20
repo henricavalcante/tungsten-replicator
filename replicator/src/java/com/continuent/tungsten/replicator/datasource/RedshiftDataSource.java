@@ -1,19 +1,18 @@
 /**
- * Tungsten Scale-Out Stack
- * Copyright (C) 2015 VMware, Inc.
+ * VMware Continuent Tungsten Replicator
+ * Copyright (C) 2015 VMware, Inc. All rights reserved.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of version 2 of the GNU General Public License as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *      
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  * Initial developer(s): Robert Hodges
  * Contributor(s): 
@@ -41,21 +40,21 @@ public class RedshiftDataSource extends AbstractDataSource
         implements
             UniversalDataSource
 {
-    private static Logger logger        = Logger.getLogger(RedshiftDataSource.class);
+    private static Logger logger = Logger.getLogger(RedshiftDataSource.class);
 
     // Properties.
-    SqlConnectionSpec     connectionSpec;
-    private String        initScript    = null;
-    boolean               createCatalog = true;
-    boolean               logOperations = false;
-    boolean               privileged    = false;
+    SqlConnectionSpec connectionSpec;
+    private String    initScript    = null;
+    boolean           createCatalog = true;
+    boolean           logOperations = false;
+    boolean           privileged    = false;
 
     // Catalog tables.
-    SqlCommitSeqno        commitSeqno;
-    ShardChannelTable     channelTable;
+    SqlCommitSeqno    commitSeqno;
+    ShardChannelTable channelTable;
 
     // SQL connection manager.
-    SqlConnectionManager  connectionManager;
+    SqlConnectionManager connectionManager;
 
     /** Create new instance. */
     public RedshiftDataSource()
@@ -126,8 +125,8 @@ public class RedshiftDataSource extends AbstractDataSource
      * Instantiate and configure all data source tables.
      */
     @Override
-    public synchronized void configure() throws ReplicatorException,
-            InterruptedException
+    public synchronized void configure()
+            throws ReplicatorException, InterruptedException
     {
         super.configure();
     }
@@ -136,8 +135,8 @@ public class RedshiftDataSource extends AbstractDataSource
      * Prepare all data source tables for use.
      */
     @Override
-    public synchronized void prepare() throws ReplicatorException,
-            InterruptedException
+    public synchronized void prepare()
+            throws ReplicatorException, InterruptedException
     {
         // Initialize connection manager.
         connectionManager = new SqlConnectionManager();
@@ -204,8 +203,8 @@ public class RedshiftDataSource extends AbstractDataSource
      * 
      * @see com.continuent.tungsten.replicator.datasource.CatalogEntity#release()
      */
-    public synchronized void release() throws ReplicatorException,
-            InterruptedException
+    public synchronized void release()
+            throws ReplicatorException, InterruptedException
     {
         // Only release if commit seqno is not null.
         if (commitSeqno != null)
@@ -306,8 +305,8 @@ public class RedshiftDataSource extends AbstractDataSource
             }
             catch (SQLException e)
             {
-                throw new ReplicatorException(
-                        "Unable to create catalog tables", e);
+                throw new ReplicatorException("Unable to create catalog tables",
+                        e);
             }
             finally
             {
@@ -374,8 +373,9 @@ public class RedshiftDataSource extends AbstractDataSource
         if (!checkDBConnectivity(false, true))
         {
             // This is all we can do.
-            logger.info("Unable to connect to data source; cannot delete catalog data: name="
-                    + name);
+            logger.info(
+                    "Unable to connect to data source; cannot delete catalog data: name="
+                            + name);
             return true;
         }
         else
@@ -401,7 +401,8 @@ public class RedshiftDataSource extends AbstractDataSource
                 {
                     // This may fail due to lack of privileges or if it's not
                     // supported.
-                    logger.debug("Unable to suppress logging when clearing catalog tables");
+                    logger.debug(
+                            "Unable to suppress logging when clearing catalog tables");
                 }
                 conn.dropTungstenCatalogTables(schema,
                         connectionSpec.getTableType(), serviceName);
@@ -409,10 +410,9 @@ public class RedshiftDataSource extends AbstractDataSource
             }
             catch (SQLException e)
             {
-                logger.warn(
-                        "Unable to delete data source catalog data: name="
-                                + name + " schema=" + schema + " url="
-                                + connectionSpec.createUrl(false), e);
+                logger.warn("Unable to delete data source catalog data: name="
+                        + name + " schema=" + schema + " url="
+                        + connectionSpec.createUrl(false), e);
                 return false;
             }
             finally
