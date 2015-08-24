@@ -21,9 +21,9 @@ This software is released under the Apache 2.0 license, a copy of which is locat
 
 To build a replicator, follow the steps shown below to obtain the source and build. 
 
-  git clone https://github.com/vchs/tungsten-replicator-private
-  cd tungsten-replicator-private/builder
-  ./build.sh
+    git clone https://github.com/vchs/tungsten-replicator-private
+    cd tungsten-replicator-private/builder
+    ./build.sh
 
 The output of a build is a tar.gz file in the builds directory. 
 
@@ -36,26 +36,25 @@ To build successfully you will require the following prerequisite software:
 
 Currently, downloads are available on Amazon S3 based on the latest release version of the code: 
 
-  [tungsten-replicator-oss-4.0.1-123.tar.gz](http://downloads.tungsten-replicator.org/download.php?file=tungsten-replicator-oss-4.0.1-123.tar.gz)
-  [tungsten-replicator-oss-4.0.1-123-src.tar.gz](http://downloads.tungsten-replicator.org/download.php?file=tungsten-replicator-oss-4.0.1-123-src.tar.gz)
+* [tungsten-replicator-oss-4.0.1-123.tar.gz](http://downloads.tungsten-replicator.org/download.php?file=tungsten-replicator-oss-4.0.1-123.tar.gz)
+* [tungsten-replicator-oss-4.0.1-123-src.tar.gz](http://downloads.tungsten-replicator.org/download.php?file=tungsten-replicator-oss-4.0.1-123-src.tar.gz)
 
 ##5 DOCUMENTATION
 
 Documentation for Tungsten Replicator is located on the VMware website 
 at the following URL: 
 
-  http://pubs.vmware.com/continuent/tungsten-replicator-4.0/index.html
+    http://pubs.vmware.com/continuent/tungsten-replicator-4.0/index.html
 
 ##6 INSTALLATION
 
 To install the replicator follow the steps shown below. 
 
-  1.) Review the installation instructions in the Tungsten 
-  Replicator Installation Guide.  
+1. Review the installation instructions in the Tungsten Replicator Installation Guide.  
 
-  2.) Run the 'tpm' command in the tools directory
-  to configure and start Tungsten services for standard replication
-  topologies. The manual has examples for many of them.
+2. Run the 'tpm' command in the tools directory to configure and start
+  Tungsten services for standard replication topologies. The manual
+  has examples for many of them.
 
 The Installation Guide provides additional information on installation
 procedures. 
