@@ -1,7 +1,7 @@
 What's in?
 ----------
 This project contains necessary files and scripts to build Tungsten
-Replicator.  As long as you have JKD 1.6 and Ant 1.7 or greater you
+Replicator.  As long as you have JKD 1.7 and Ant 1.8 or greater you
 should be able to build.
 
 What to do?
@@ -34,4 +34,4 @@ We normally use Eclipse for work on Tungsten.  Here's how to set up.
 3. Import this project plus all 
 
 Depending on your Eclipse settings you may have to set the JDK
-version to 1.6.
+version to 1.7.
