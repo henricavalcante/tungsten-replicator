@@ -32,14 +32,21 @@ To build successfully you will require the following prerequisite software:
 * JDK 7 or higher
 * Ant 1.8 or higher
 
-##4 DOCUMENTATION
+##4 DOWNLOADS
+
+Currently, downloads are available on Amazon S3 based on the latest release version of the code: 
+
+  [http://downloads.tungsten-replicator.org/download.php?file=tungsten-replicator-oss-4.0.1-123.tar.gz](http://downloads.tungsten-replicator.org/download.php?file=tungsten-replicator-oss-4.0.1-123.tar.gz)
+  [http://downloads.tungsten-replicator.org/download.php?file=tungsten-replicator-oss-4.0.1-123-src.tar.gz](http://downloads.tungsten-replicator.org/download.php?file=tungsten-replicator-oss-4.0.1-123-src.tar.gz)
+
+##5 DOCUMENTATION
 
 Documentation for Tungsten Replicator is located on the VMware website 
 at the following URL: 
 
-  http://docs.continuent.com/tungsten-replicator-4.0/index.html
+  http://pubs.vmware.com/continuent/tungsten-replicator-4.0/index.html
 
-##5 INSTALLATION
+##6 INSTALLATION
 
 To install the replicator follow the steps shown below. 
 
@@ -53,7 +60,7 @@ To install the replicator follow the steps shown below.
 The Installation Guide provides additional information on installation
 procedures. 
 
-##6 DEVELOPMENT
+##7 DEVELOPMENT
 
 Most of us use Eclipse for replicator.  Here's how to get started. 
 
@@ -65,23 +72,21 @@ Eclipse code and comment formatting definitions are located in commons/eclipse-s
 See the README.txt for instructions on importing.  (And no, we don't plan on changing them to suit anyone's individual 
 tastes.  It screws up merges and we have been using them for about a decade.)
 
-##7 COMMUNITY
+##8 COMMUNITY
 
 Tungsten Replicator is supported by an active community.  You can find us in the following places. 
 
 * [Google Group discussion on Tungsten Replicator](http://groups.google.com/group/tungsten-replicator-discuss)
-* There is a #tungsten channel on irc.freenode.net
-* Blogs, especially: [The Data Charmer](http://datacharmer.blogspot.com/) 
-  and [The Scale Out Blog](http://scale-out-blog.blogspot.com/)
+* Blogs, especially: [The Data Charmer](http://datacharmer.blogspot.com/), 
+  and [The Scale Out Blog](http://scale-out-blog.blogspot.com/), and [MCslp Blog](http://mcslp.com)
 
-##8 CONTRIBUTIONS
+##9 CONTRIBUTIONS
 
-Active communities contribute code and we're happy to consider yours.  See the 
-[Contributor Guidelines](http://to-be-added.html). 
+Active communities contribute code and we're happy to consider yours. To be involved, please [MC Brown](mailto:mcb@vmware.com)
 
-##9 PROBLEMS
+##10 PROBLEMS
 
-This is open source software. You get what you pay for. Check the wiki, issues list, and mailing lists to get help.  
+This is open source software. Check the wiki, issues list, and mailing lists to get help.  
 VMware also offers commercial products based on Tungsten Replicator.  See the 
 [VMware Continuent](http://www.vmware.com/products/continuent) 
 products page for more information. 
