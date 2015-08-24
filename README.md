@@ -34,10 +34,7 @@ To build successfully you will require the following prerequisite software:
 
 ##4 DOWNLOADS
 
-Currently, downloads are available on Amazon S3 based on the latest release version of the code: 
-
-* [tungsten-replicator-oss-4.0.1-123.tar.gz](http://downloads.tungsten-replicator.org/download.php?file=tungsten-replicator-oss-4.0.1-123.tar.gz)
-* [tungsten-replicator-oss-4.0.1-123-src.tar.gz](http://downloads.tungsten-replicator.org/download.php?file=tungsten-replicator-oss-4.0.1-123-src.tar.gz)
+Currently there are no builds from the new code available, they will be made available as soon as possible.
 
 ##5 DOCUMENTATION
 
