@@ -21,9 +21,9 @@ This software is released under the Apache 2.0 license, a copy of which is locat
 
 To build a replicator, follow the steps shown below to obtain the source and build. 
 
-    git clone https://github.com/vchs/tungsten-replicator-private
-    cd tungsten-replicator-private/builder
-    ./build.sh
+       git clone https://github.com/vchs/tungsten-replicator-private
+       cd tungsten-replicator-private/builder
+       ./build.sh
 
 The output of a build is a tar.gz file in the builds directory. 
 
