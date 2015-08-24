@@ -36,8 +36,8 @@ To build successfully you will require the following prerequisite software:
 
 Currently, downloads are available on Amazon S3 based on the latest release version of the code: 
 
-  [http://downloads.tungsten-replicator.org/download.php?file=tungsten-replicator-oss-4.0.1-123.tar.gz](http://downloads.tungsten-replicator.org/download.php?file=tungsten-replicator-oss-4.0.1-123.tar.gz)
-  [http://downloads.tungsten-replicator.org/download.php?file=tungsten-replicator-oss-4.0.1-123-src.tar.gz](http://downloads.tungsten-replicator.org/download.php?file=tungsten-replicator-oss-4.0.1-123-src.tar.gz)
+  [tungsten-replicator-oss-4.0.1-123.tar.gz](http://downloads.tungsten-replicator.org/download.php?file=tungsten-replicator-oss-4.0.1-123.tar.gz)
+  [tungsten-replicator-oss-4.0.1-123-src.tar.gz](http://downloads.tungsten-replicator.org/download.php?file=tungsten-replicator-oss-4.0.1-123-src.tar.gz)
 
 ##5 DOCUMENTATION
 
@@ -82,7 +82,7 @@ Tungsten Replicator is supported by an active community.  You can find us in the
 
 ##9 CONTRIBUTIONS
 
-Active communities contribute code and we're happy to consider yours. To be involved, please [MC Brown](mailto:mcb@vmware.com)
+Active communities contribute code and we're happy to consider yours. To be involved, please email [MC Brown](mailto:mcb@vmware.com)
 
 ##10 PROBLEMS
 
