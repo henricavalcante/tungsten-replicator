@@ -723,10 +723,17 @@ class UpgradeSameProductCheck < ConfigureValidationCheck
   def validate
     current_dir = @config.getProperty(CURRENT_RELEASE_DIRECTORY)
     if File.exist?(current_dir)
-      if File.exist?(current_dir + "/tungsten-manager") == true
-        current_product_name = "Continuent Tungsten"
-      else
-        current_product_name = "Tungsten Replicator"
+      current_product_name = nil
+      begin
+        # This will work for version >= 4.1.0
+        current_product_name = cmd_result(current_dir + "/tools/tpm query product")
+      rescue CommandError
+        # This logic will work for old versions
+        if File.exist?(current_dir + "/tungsten-manager") == true
+          current_product_name = PRODUCT_VMWARE_CLUSTERING
+        else
+          current_product_name = PRODUCT_VMWARE_REPLICATION
+        end
       end
       
       if Configurator.instance.product_name() != current_product_name

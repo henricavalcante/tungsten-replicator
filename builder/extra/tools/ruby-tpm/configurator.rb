@@ -139,6 +139,13 @@ PROVISION_NEW_SLAVES = "provision_new_slaves"
 TPM_COMMAND_NAME = "tpm"
 AUTODETECT = 'autodetect'
 
+PRODUCT_VMWARE_CLUSTERING = "VMware Continuent for Clustering"
+ABBR_VMWARE_CLUSTERING = "vCC"
+PRODUCT_VMWARE_REPLICATION = "VMware Continuent for Replication"
+ABBR_VMWARE_REPLICATION = "vCR"
+PRODUCT_TUNGSTEN_REPLICATOR = "Tungsten Replicator"
+ABBR_TUNGSTEN_REPLICATOR = "TR"
+
 class IgnoreError < StandardError
 end
 
@@ -147,9 +154,6 @@ class Configurator
   include Singleton
   
   attr_reader :command
-  
-  TUNGSTEN_COMMUNITY = "Community"
-  TUNGSTEN_ENTERPRISE = "Enterprise"
   
   DATASERVICE_CONFIG = "deploy.cfg"
   HOST_CONFIG = "tungsten.cfg"
@@ -1075,11 +1079,17 @@ class Configurator
               "product" => parsed['product']
             }
             
-            release_info = cmd_result("grep RELEASE #{get_manifest_file_path()}")
-            if release_info =~ /tungsten-replicator/
+            if parsed['product'] == "Tungsten Replicator"
               @release_details[:is_enterprise_package] = false
+              
+              if parsed["git"]["URL"] =~ /github\.com/
+                @release_details[:is_open_source] = true
+              else
+                @release_details[:is_open_source] = false
+              end
             else
               @release_details[:is_enterprise_package] = true
+              @release_details[:is_open_source] = false
             end
           rescue JSON::ParserError
             raise "Unable to parse the .manifest.json file"
@@ -1190,19 +1200,28 @@ class Configurator
     release_details[:is_enterprise_package]
   end
   
-  def tungsten_version
-    unless is_enterprise?()
-      TUNGSTEN_COMMUNITY
-    else
-      TUNGSTEN_ENTERPRISE
-    end
+  def is_open_source?
+    release_details = get_release_details()
+    release_details[:is_open_source]
   end
   
   def product_name
-    if is_enterprise?()
-      "Continuent Tungsten"
+    if is_open_source?()
+      PRODUCT_TUNGSTEN_REPLICATOR
+    elsif is_enterprise?()
+      PRODUCT_VMWARE_CLUSTERING
     else
-      "Tungsten Replicator"
+      PRODUCT_VMWARE_REPLICATION
+    end
+  end
+  
+  def product_abbreviation
+    if is_open_source?()
+      ABBR_TUNGSTEN_REPLICATOR
+    elsif is_enterprise?()
+      ABBR_VMWARE_CLUSTERING
+    else
+      ABBR_VMWARE_REPLICATION
     end
   end
   
