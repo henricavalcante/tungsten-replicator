@@ -14,9 +14,10 @@ class QueryCommand
   QUERY_MODIFIED_FILES = "modified-files"
   QUERY_USERMAP = "usermap"
   QUERY_DEPLOYMENTS = "deployments"
+  QUERY_PRODUCT = "product"
   
   def allowed_subcommands
-    [QUERY_VERSION, QUERY_MANIFEST, QUERY_CONFIG, QUERY_TOPOLOGY, QUERY_DATASERVICES, QUERY_STAGING, QUERY_DEFAULT, QUERY_VALUES, QUERY_MODIFIED_FILES, QUERY_USERMAP, QUERY_DEPLOYMENTS, QUERY_EXTERNAL_CONFIGURATION]
+    [QUERY_VERSION, QUERY_MANIFEST, QUERY_CONFIG, QUERY_TOPOLOGY, QUERY_DATASERVICES, QUERY_STAGING, QUERY_DEFAULT, QUERY_VALUES, QUERY_MODIFIED_FILES, QUERY_USERMAP, QUERY_DEPLOYMENTS, QUERY_EXTERNAL_CONFIGURATION, QUERY_PRODUCT]
   end
   
   def allow_multiple_tpm_commands?
@@ -27,6 +28,8 @@ class QueryCommand
     case subcommand()
     when QUERY_VERSION
       force_output(Configurator.instance.get_release_version())
+    when QUERY_PRODUCT
+      force_output(Configurator.instance.product_name())
     when QUERY_MANIFEST
       manifest = Properties.new()
       manifest.load(Configurator.instance.get_manifest_json_file_path())

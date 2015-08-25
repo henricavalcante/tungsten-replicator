@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# REPLICATOR#NIX START SCRIPT
+# REPLICATOR #NIX START SCRIPT
 # 
 # Script usage follows service script conventions: 
 #   replicator { console | start [offline debug] | stop | restart | status | dump}
@@ -35,6 +35,18 @@
 # To configure script behavior, put default values in replicator.env
 # and they will be sourced on startup.  This is better than altering
 # the script directly.
+ 
+# Initialization block for the install_initd and remove_initd scripts used by
+#  SUSE linux distributions.
+### BEGIN INIT INFO
+# Provides: @{REPL_SERVICE_NAME}
+# Required-Start: $local_fs $network $syslog @{REPL_SERVICE_REQUIRED_INITD}
+# Should-Start: 
+# Required-Stop:
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Description: @{REPL_SERVICE_DESCRIPTION}
+### END INIT INFO
 
 ##############################################################################
 # ENVIRONMENT SETUP

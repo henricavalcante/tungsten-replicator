@@ -1752,6 +1752,15 @@ class HostServiceControlType < ConfigurePrompt
     rescue CommandError
       service = nil
     end
+
+    if service == nil
+      # Catch instances where `service` is not in $PATH
+      begin
+        service = cmd_result("ls /sbin/service")
+      rescue CommandError
+        service = nil
+      end
+    end
     
     if systemctl != nil
       @default = SYSTEMCTL
