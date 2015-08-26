@@ -41,7 +41,7 @@ Currently there are no builds from the new code available, they will be made ava
 Documentation for Tungsten Replicator is located on the VMware website 
 at the following URL: 
 
-    http://pubs.vmware.com/continuent/tungsten-replicator-4.0/index.html
+[https://pubs.vmware.com/continuent/tungsten-replicator-4.0/index.html](https://pubs.vmware.com/continuent/tungsten-replicator-4.0/index.html)
 
 ##6 INSTALLATION
 
